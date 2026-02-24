@@ -2,6 +2,8 @@
 import type { Project } from './data/projects'
 import { cn } from '~/lib/utils'
 
+const { t } = useLocale()
+
 interface Props {
   projects: Project[]
   selectedProjectId: string | null
@@ -60,18 +62,6 @@ const totalTasks = computed(() => {
 
 <template>
   <div class="flex flex-col h-full">
-    <!-- Header -->
-    <div v-if="!isCollapsed" class="flex items-center justify-between px-4 h-[56px]">
-      <h2 class="text-sm font-semibold tracking-tight">Projects</h2>
-      <Badge variant="secondary" class="text-xs tabular-nums">
-        {{ totalTasks }}
-      </Badge>
-    </div>
-    <div v-else class="flex items-center justify-center h-[56px]">
-      <Icon name="lucide:folder-kanban" class="size-5 text-muted-foreground" />
-    </div>
-
-    <Separator />
 
     <!-- All Tasks option -->
     <div class="px-2 pt-2">
@@ -85,7 +75,7 @@ const totalTasks = computed(() => {
       >
         <template v-if="!isCollapsed">
           <Icon name="lucide:layers" class="size-4 shrink-0" />
-          <span>All</span>
+          <span>{{ t('tasks.allProjects') }}</span>
           <Badge variant="secondary" class="ml-auto text-xs tabular-nums h-5 px-1.5">
             {{ totalTasks }}
           </Badge>
@@ -95,7 +85,7 @@ const totalTasks = computed(() => {
             <TooltipTrigger as-child>
               <Icon name="lucide:layers" class="size-4" />
             </TooltipTrigger>
-            <TooltipContent side="right">All ({{ totalTasks }})</TooltipContent>
+            <TooltipContent side="right">All Projects ({{ totalTasks }})</TooltipContent>
           </Tooltip>
         </template>
       </button>

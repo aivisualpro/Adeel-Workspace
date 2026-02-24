@@ -3,7 +3,7 @@ import { columns } from '@/components/tasks/components/columns'
 import tasks from '@/components/tasks/data/tasks.json'
 
 const { setHeader } = usePageHeader()
-setHeader({ title: 'Tasks', icon: 'i-lucide-calendar-check-2', description: 'Here\'s a list of your tasks for this month!' })
+setHeader({ titleKey: 'tasks.title', icon: 'i-lucide-calendar-check-2' })
 </script>
 
 <template>

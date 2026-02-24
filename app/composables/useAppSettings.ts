@@ -19,6 +19,8 @@ const defaultAppSettings: AppSettings = {
     color: 'default',
     type: 'default',
   },
+  direction: 'ltr',
+  locale: 'en',
 }
 
 export function useAppSettings() {
@@ -38,5 +40,8 @@ export function useAppSettings() {
     updateAppSettings,
     sidebar: computed(() => cookieAppSettings.value.sidebar),
     theme: computed(() => cookieAppSettings.value.theme),
+    direction: computed(() => cookieAppSettings.value.direction || 'ltr'),
+    locale: computed(() => cookieAppSettings.value.locale || 'en'),
   }
 }
+

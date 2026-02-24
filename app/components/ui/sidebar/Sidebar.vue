@@ -18,6 +18,7 @@ const props = withDefaults(defineProps<SidebarProps>(), {
 })
 
 const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+const { direction } = useAppSettings()
 </script>
 
 <template>
@@ -45,7 +46,7 @@ const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
         <SheetTitle>Sidebar</SheetTitle>
         <SheetDescription>Displays the mobile sidebar.</SheetDescription>
       </SheetHeader>
-      <div class="flex h-full w-full flex-col">
+      <div class="flex h-full w-full flex-col" :dir="direction">
         <slot />
       </div>
     </SheetContent>
@@ -84,6 +85,7 @@ const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
         props.class,
       )"
       v-bind="$attrs"
+      :dir="direction"
     >
       <div
         data-sidebar="sidebar"

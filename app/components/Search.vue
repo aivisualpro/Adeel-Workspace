@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import type { NavGroup, NavMenu } from '~/types/nav'
+import type { TranslationKey } from '~/composables/useLocale'
 import { navMenu } from '@/constants/menus'
 
 const { metaSymbol } = useShortcuts()
+const { t } = useLocale()
 
 const openCommand = ref(false)
 const router = useRouter()
@@ -25,10 +27,10 @@ function handleSelectLink(link: string) {
 </script>
 
 <template>
-  <SidebarMenuButton as-child tooltip="Search">
+  <SidebarMenuButton as-child :tooltip="t('common.search')">
     <Button variant="outline" size="sm" class="text-xs" @click="openCommand = !openCommand">
       <Icon name="i-lucide-search" />
-      <span class="font-normal group-data-[collapsible=icon]:hidden">Search documentation</span>
+      <span class="font-normal group-data-[collapsible=icon]:hidden">{{ t('common.search') }}</span>
       <div class="ml-auto flex items-center space-x-0.5 group-data-[collapsible=icon]:hidden">
         <Kbd>{{ metaSymbol }}</Kbd>
         <Kbd>K</Kbd>
@@ -37,19 +39,19 @@ function handleSelectLink(link: string) {
   </SidebarMenuButton>
 
   <CommandDialog v-model:open="openCommand">
-    <CommandInput placeholder="Type a command or search..." />
+    <CommandInput :placeholder="t('common.search') + '...'" />
     <CommandList>
-      <CommandEmpty>No results found.</CommandEmpty>
+      <CommandEmpty>{{ t('common.noResults') }}</CommandEmpty>
       <CommandGroup heading="Suggestions">
         <CommandItem value="Home" @select="handleSelectLink('/')">
-          Home
+          {{ t('nav.dashboard') }}
           <CommandShortcut>
             <Kbd>G</Kbd>
             <Kbd>H</Kbd>
           </CommandShortcut>
         </CommandItem>
         <CommandItem value="email" @select="handleSelectLink('/email')">
-          Email
+          {{ t('nav.email') }}
           <CommandShortcut>
             <Kbd>G</Kbd>
             <Kbd>E</Kbd>
@@ -72,7 +74,3 @@ function handleSelectLink(link: string) {
     </CommandList>
   </CommandDialog>
 </template>
-
-<style scoped>
-
-</style>

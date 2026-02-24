@@ -6,10 +6,23 @@ const isDesktop = useMediaQuery('(min-width: 768px)')
 
 const isOpen = ref(false)
 
-const { sidebar, updateAppSettings } = useAppSettings()
+const { sidebar, updateAppSettings, direction: savedDirection } = useAppSettings()
 const { t, setLocale, locale } = useLocale()
 
-const direction = useTextDirection()
+const textDirection = useTextDirection()
+
+// Use savedDirection (cookie-backed, SSR-safe) as the source of truth for rendering
+const direction = computed(() => savedDirection.value || 'ltr')
+
+// Sync the DOM direction from the cookie on mount
+onMounted(() => {
+  textDirection.value = direction.value
+})
+
+// When direction changes (via button click), sync both cookie and DOM
+watch(direction, (dir) => {
+  textDirection.value = dir
+})
 
 const ltrLanguages = [
   { value: 'en' as LocaleCode, label: 'English', flag: '🇺🇸', default: true },
@@ -27,8 +40,11 @@ const availableLanguages = computed(() =>
 )
 
 function handleChangeDirection(dir: 'ltr' | 'rtl') {
-  direction.value = dir
-  updateAppSettings({ sidebar: { side: dir === 'rtl' ? 'right' : 'left' } })
+  textDirection.value = dir
+  updateAppSettings({
+    direction: dir,
+    sidebar: { side: dir === 'rtl' ? 'right' : 'left' },
+  })
   // Auto-select the default language for the chosen direction
   const langs = dir === 'rtl' ? rtlLanguages : ltrLanguages
   const defaultLang = langs.find(l => l.default) ?? langs[0]!
@@ -37,6 +53,7 @@ function handleChangeDirection(dir: 'ltr' | 'rtl') {
 
 function handleChangeLanguage(lang: LocaleCode) {
   setLocale(lang)
+  updateAppSettings({ locale: lang })
 }
 </script>
 
@@ -138,7 +155,7 @@ function handleChangeLanguage(lang: LocaleCode) {
 
   <Drawer v-else v-model:open="isOpen">
     <DrawerTrigger as-child>
-      <Button class="fixed top-1/2 z-50 pr-6 -right-3">
+      <Button class="fixed top-1/2 z-50" :class="direction === 'rtl' ? '-left-3 pl-6' : '-right-3 pr-6'">
         <Icon name="i-lucide-settings" class="animate-spin-slow" size="18" />
       </Button>
     </DrawerTrigger>

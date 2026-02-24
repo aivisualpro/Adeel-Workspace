@@ -6,7 +6,20 @@ import 'vue-sonner/style.css'
 
 const colorMode = useColorMode()
 const color = computed(() => colorMode.value === 'dark' ? '#09090b' : '#ffffff')
-const { theme } = useAppSettings()
+const { theme, direction: savedDirection } = useAppSettings()
+const { locale } = useLocale()
+
+// SSR-safe direction: read from cookie (works on both server and client)
+const dir = computed(() => savedDirection.value === 'rtl' ? 'rtl' : 'ltr')
+
+// Sync the DOM <html dir="..."> attribute on client side
+const textDirection = useTextDirection()
+onMounted(() => {
+  textDirection.value = dir.value
+})
+watch(dir, (newDir) => {
+  textDirection.value = newDir
+})
 
 useHead({
   meta: [
@@ -16,9 +29,13 @@ useHead({
   ],
   link: [
     { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
+    { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+    { rel: 'apple-touch-icon', sizes: '180x180', href: '/logo-180.png' },
+    { rel: 'manifest', href: '/manifest.json' },
   ],
   htmlAttrs: {
-    lang: 'en',
+    lang: computed(() => locale.value || 'en'),
+    dir: computed(() => dir.value),
   },
   bodyAttrs: {
     class: computed(() => `color-${theme.value?.color || 'default'} theme-${theme.value?.type || 'default'}`),
@@ -47,9 +64,6 @@ defineShortcuts({
   'G-H': () => router.push('/'),
   'G-E': () => router.push('/email'),
 })
-
-const textDirection = useTextDirection({ initialValue: 'ltr' })
-const dir = computed(() => textDirection.value === 'rtl' ? 'rtl' : 'ltr')
 </script>
 
 <template>
@@ -65,7 +79,5 @@ const dir = computed(() => textDirection.value === 'rtl' ? 'rtl' : 'ltr')
 
       <Toaster :theme="colorMode.preference as any || 'system'" />
     </ConfigProvider>
-
-
   </Body>
 </template>

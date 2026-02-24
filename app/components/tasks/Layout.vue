@@ -3,8 +3,12 @@ import type { Task } from './data/schema'
 import type { ColumnDef } from '@tanstack/vue-table'
 import { useMediaQuery } from '@vueuse/core'
 import { projects, taskProjectMap } from './data/projects'
+import { labels } from './data/data'
 import { cn } from '~/lib/utils'
 import DataTable from './components/DataTable.vue'
+
+const { t } = useLocale()
+const { setHeader } = usePageHeader()
 
 interface Props {
   data: Task[]
@@ -70,14 +74,143 @@ const filteredData = computed(() => {
   })
 })
 
-// Get selected context label for the header
-const selectedLabel = computed(() => {
+// Build a project index for fast lookups
+const projectIndex = computed(() => {
+  const idx = new Map<string, { name: string, icon: string, stageMap: Map<string, { name: string, color: string }> }>()
+  for (const p of projects) {
+    const stageMap = new Map<string, { name: string, color: string }>()
+    for (const s of p.stages) {
+      stageMap.set(s.id, { name: s.name, color: s.color })
+    }
+    idx.set(p.id, { name: p.name, icon: p.icon, stageMap })
+  }
+  return idx
+})
+
+// Label order for consistent sorting
+const labelOrder = new Map(labels.map((l, i) => [l.value, i]))
+
+// Sort tasks by project → stage → label for grouping
+function sortTasks(data: Task[]): Task[] {
+  const sorted = [...data]
+  const projOrder = new Map<string, number>()
+  projects.forEach((p, i) => projOrder.set(p.id, i))
+
+  sorted.sort((a, b) => {
+    const ma = taskProjectMap[a.id]
+    const mb = taskProjectMap[b.id]
+    if (!ma && !mb) return 0
+    if (!ma) return 1
+    if (!mb) return -1
+
+    // Sort by project
+    const pOrdA = projOrder.get(ma.projectId) ?? 999
+    const pOrdB = projOrder.get(mb.projectId) ?? 999
+    if (pOrdA !== pOrdB) return pOrdA - pOrdB
+
+    // Sort by stage
+    const projA = projectIndex.value.get(ma.projectId)
+    const projB = projectIndex.value.get(mb.projectId)
+    if (projA && projB) {
+      const stagesA = [...projA.stageMap.keys()]
+      const stagesB = [...projB.stageMap.keys()]
+      const sOrdA = stagesA.indexOf(ma.stageId)
+      const sOrdB = stagesB.indexOf(mb.stageId)
+      if (sOrdA !== sOrdB) return sOrdA - sOrdB
+    }
+
+    // Sort by label (bug, feature, documentation)
+    const lOrdA = labelOrder.get(a.label) ?? 999
+    const lOrdB = labelOrder.get(b.label) ?? 999
+    return lOrdA - lOrdB
+  })
+
+  return sorted
+}
+
+const sortedData = ref<Task[]>([])
+
+watch(filteredData, (data) => {
+  sortedData.value = sortTasks(data)
+}, { immediate: true })
+
+// Reorder tasks within a group
+function onReorder(groupKey: string, fromIdx: number, toIdx: number) {
+  const data = [...sortedData.value]
+  // Find tasks in this group
+  const groupTasks: number[] = []
+  for (let i = 0; i < data.length; i++) {
+    const task = data[i]!
+    const mapping = taskProjectMap[task.id]
+    if (!mapping) continue
+    const key = `${mapping.projectId}:${mapping.stageId}:${task.label}`
+    if (key === groupKey) {
+      groupTasks.push(i)
+    }
+  }
+
+  if (fromIdx >= groupTasks.length || toIdx >= groupTasks.length) return
+
+  const fromDataIdx = groupTasks[fromIdx]!
+  const toDataIdx = groupTasks[toIdx]!
+
+  // Swap
+  const temp = data[fromDataIdx]
+  data[fromDataIdx] = data[toDataIdx]!
+  data[toDataIdx] = temp!
+
+  sortedData.value = data
+}
+
+// Group info including label as 3rd level
+export interface TaskGroupInfo {
+  projectId: string
+  projectName: string
+  projectIcon: string
+  stageId: string
+  stageName: string
+  stageColor: string
+  label: string
+  labelDisplay: string
+  labelKey: string
+}
+
+const taskGroupMap = computed(() => {
+  const map = new Map<string, TaskGroupInfo>()
+  for (const task of sortedData.value) {
+    const mapping = taskProjectMap[task.id]
+    if (!mapping) continue
+    const proj = projectIndex.value.get(mapping.projectId)
+    if (!proj) continue
+    const stage = proj.stageMap.get(mapping.stageId)
+    if (!stage) continue
+    const labelDef = labels.find(l => l.value === task.label)
+    map.set(task.id, {
+      projectId: mapping.projectId,
+      projectName: proj.name,
+      projectIcon: proj.icon,
+      stageId: mapping.stageId,
+      stageName: stage.name,
+      stageColor: stage.color,
+      label: task.label,
+      labelDisplay: labelDef?.label || task.label,
+      labelKey: labelDef?.labelKey || `tasks.label.${task.label}`,
+    })
+  }
+  return map
+})
+
+// Whether grouping should be shown
+const showGrouping = computed(() => !selectedStageId.value)
+
+// Build breadcrumb description for main header
+const headerDescription = computed(() => {
   if (!selectedProjectId.value)
-    return 'All Tasks'
+    return ''
 
   const project = projects.find(p => p.id === selectedProjectId.value)
   if (!project)
-    return 'All Tasks'
+    return ''
 
   if (selectedStageId.value) {
     const stage = project.stages.find(s => s.id === selectedStageId.value)
@@ -87,22 +220,21 @@ const selectedLabel = computed(() => {
   return project.name
 })
 
-const selectedStageColor = computed(() => {
-  if (!selectedProjectId.value || !selectedStageId.value)
-    return null
-  const project = projects.find(p => p.id === selectedProjectId.value)
-  if (!project)
-    return null
-  const stage = project.stages.find(s => s.id === selectedStageId.value)
-  return stage?.color || null
-})
+// Reactively update the main header when selection changes
+watch(headerDescription, (desc) => {
+  setHeader({
+    titleKey: 'tasks.title',
+    icon: 'i-lucide-calendar-check-2',
+    description: desc || '',
+  })
+}, { immediate: true })
 
 function onSelectProject(projectId: string | null) {
   selectedProjectId.value = projectId
   selectedStageId.value = null
 }
 
-function onSelectStage(projectId: string, stageId: string) {
+function onSelectStage(projectId: string, stageId: string | null) {
   selectedProjectId.value = projectId
   selectedStageId.value = stageId || null
 }
@@ -157,28 +289,14 @@ watch(() => defaultCollapse.value, () => {
 
       <!-- Main Content Panel -->
       <ResizablePanel id="tasks-content-panel" :default-size="defaultLayout[1]" :min-size="50">
-        <div class="flex flex-col h-full">
-          <!-- Context header -->
-          <div class="flex items-center gap-2 px-4 h-[56px] border-b">
-            <div class="flex items-center gap-2 min-w-0">
-              <span
-                v-if="selectedStageColor"
-                class="size-2.5 rounded-full shrink-0"
-                :style="{ backgroundColor: selectedStageColor }"
-              />
-              <Icon v-else-if="selectedProjectId" name="lucide:folder-kanban" class="size-4 text-primary shrink-0" />
-              <Icon v-else name="lucide:layout-list" class="size-4 text-muted-foreground shrink-0" />
-              <h2 class="text-base font-semibold truncate">{{ selectedLabel }}</h2>
-            </div>
-            <Badge variant="outline" class="ml-auto tabular-nums text-xs shrink-0">
-              {{ filteredData.length }} {{ filteredData.length === 1 ? 'task' : 'tasks' }}
-            </Badge>
-          </div>
-
-          <!-- Data table -->
-          <div class="flex-1 overflow-auto p-4">
-            <DataTable :data="filteredData" :columns="columns" />
-          </div>
+        <div class="flex flex-col h-full overflow-auto p-4">
+          <DataTable
+            :data="sortedData"
+            :columns="columns"
+            :task-group-map="taskGroupMap"
+            :show-grouping="showGrouping"
+            @reorder="onReorder"
+          />
         </div>
       </ResizablePanel>
     </ResizablePanelGroup>

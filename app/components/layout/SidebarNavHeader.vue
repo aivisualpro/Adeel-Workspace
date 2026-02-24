@@ -23,8 +23,8 @@ const activeTeam = ref(props.teams[0])
             size="lg"
             class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
           >
-            <div class="aspect-square size-8 flex items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-              <Icon :name="activeTeam!.logo" class="size-4" />
+            <div class="aspect-square size-8 flex items-center justify-center rounded-lg overflow-hidden bg-sidebar-primary">
+              <img src="/logo-192.png" alt="AI Visual Pro" class="size-8 object-cover" />
             </div>
             <div class="grid flex-1 text-left text-sm leading-tight">
               <span class="truncate font-semibold">
@@ -49,8 +49,8 @@ const activeTeam = ref(props.teams[0])
             class="gap-2 p-2"
             @click="activeTeam = team"
           >
-            <div class="size-6 flex items-center justify-center border rounded-sm">
-              <Icon :name="team.logo" class="size-4 shrink-0" />
+            <div class="size-6 flex items-center justify-center rounded-sm overflow-hidden border">
+              <img src="/logo-192.png" alt="" class="size-6 object-cover" />
             </div>
             {{ team.name }}
             <DropdownMenuShortcut>⌘{{ index + 1 }}</DropdownMenuShortcut>
@@ -69,7 +69,3 @@ const activeTeam = ref(props.teams[0])
     </SidebarMenuItem>
   </SidebarMenu>
 </template>
-
-<style scoped>
-
-</style>

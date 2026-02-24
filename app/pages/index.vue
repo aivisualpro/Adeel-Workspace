@@ -2,6 +2,8 @@
 import NumberFlow from '@number-flow/vue'
 import { TrendingDown, TrendingUp, TrendingUpIcon } from 'lucide-vue-next'
 
+const { t } = useLocale()
+
 const dataCard = ref({
   totalRevenue: 0,
   newCustomers: 0,
@@ -31,20 +33,20 @@ watch(isDesktop, () => {
 }, { immediate: true })
 
 const { setHeader } = usePageHeader()
-setHeader({ title: 'Dashboard', icon: 'i-lucide-layout-dashboard', description: 'Overview of key metrics and performance' })
+setHeader({ titleKey: 'dashboard.title', icon: 'i-lucide-layout-dashboard', descriptionKey: 'dashboard.description' })
 </script>
 
 <template>
   <div class="w-full flex flex-col gap-4">
     <div class="flex items-center justify-end gap-2">
       <BaseDateRangePicker />
-      <Button>Download</Button>
+      <Button>{{ t('dashboard.download') }}</Button>
     </div>
     <main class="@container/main flex flex-1 flex-col gap-4 md:gap-8">
       <div class="grid grid-cols-1 gap-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:shadow-xs @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
         <Card class="@container/card">
           <CardHeader>
-            <CardDescription>Total Revenue</CardDescription>
+            <CardDescription>{{ t('dashboard.totalRevenue') }}</CardDescription>
             <CardTitle class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
               <NumberFlow
                 :value="dataCard.totalRevenue"
@@ -60,16 +62,16 @@ setHeader({ title: 'Dashboard', icon: 'i-lucide-layout-dashboard', description: 
           </CardHeader>
           <CardFooter class="flex-col items-start gap-1.5 text-sm">
             <div class="line-clamp-1 flex gap-2 font-medium">
-              Trending up this month <TrendingUp class="size-4" />
+              {{ t('dashboard.trendingUp') }} <TrendingUp class="size-4" />
             </div>
             <div class="text-muted-foreground">
-              Visitors for the last 6 months
+              {{ t('dashboard.visitorsLast6Months') }}
             </div>
           </CardFooter>
         </Card>
         <Card class="@container/card">
           <CardHeader>
-            <CardDescription>New Customers</CardDescription>
+            <CardDescription>{{ t('dashboard.newCustomers') }}</CardDescription>
             <CardTitle class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
               <NumberFlow
                 :value="dataCard.newCustomers"
@@ -84,16 +86,16 @@ setHeader({ title: 'Dashboard', icon: 'i-lucide-layout-dashboard', description: 
           </CardHeader>
           <CardFooter class="flex-col items-start gap-1.5 text-sm">
             <div class="line-clamp-1 flex gap-2 font-medium">
-              Down 20% this period <TrendingDown class="size-4" />
+              {{ t('dashboard.down20') }} <TrendingDown class="size-4" />
             </div>
             <div class="text-muted-foreground">
-              Acquisition needs attention
+              {{ t('dashboard.acquisitionAttention') }}
             </div>
           </CardFooter>
         </Card>
         <Card class="@container/card">
           <CardHeader>
-            <CardDescription>Active Accounts</CardDescription>
+            <CardDescription>{{ t('dashboard.activeAccounts') }}</CardDescription>
             <CardTitle class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
               <NumberFlow
                 :value="dataCard.activeAccount"
@@ -108,16 +110,16 @@ setHeader({ title: 'Dashboard', icon: 'i-lucide-layout-dashboard', description: 
           </CardHeader>
           <CardFooter class="flex-col items-start gap-1.5 text-sm">
             <div class="line-clamp-1 flex gap-2 font-medium">
-              Strong user retention <TrendingUp class="size-4" />
+              {{ t('dashboard.strongRetention') }} <TrendingUp class="size-4" />
             </div>
             <div class="text-muted-foreground">
-              Engagement exceed targets
+              {{ t('dashboard.engagementExceed') }}
             </div>
           </CardFooter>
         </Card>
         <Card class="@container/card">
           <CardHeader>
-            <CardDescription>Growth Rate</CardDescription>
+            <CardDescription>{{ t('dashboard.growthRate') }}</CardDescription>
             <CardTitle class="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
               <NumberFlow
                 :value="dataCard.growthRate"
@@ -133,22 +135,22 @@ setHeader({ title: 'Dashboard', icon: 'i-lucide-layout-dashboard', description: 
           </CardHeader>
           <CardFooter class="flex-col items-start gap-1.5 text-sm">
             <div class="line-clamp-1 flex gap-2 font-medium">
-              Steady performance increase <TrendingUp class="size-4" />
+              {{ t('dashboard.steadyPerformance') }} <TrendingUp class="size-4" />
             </div>
             <div class="text-muted-foreground">
-              Meets growth projections
+              {{ t('dashboard.meetsGrowth') }}
             </div>
           </CardFooter>
         </Card>
       </div>
       <Card class="@container/card">
         <CardHeader>
-          <CardTitle>Total Visitors</CardTitle>
+          <CardTitle>{{ t('dashboard.totalVisitors') }}</CardTitle>
           <CardDescription>
             <span className="hidden @[540px]/card:block">
-              Total for the last 3 months
+              {{ t('dashboard.totalLast3Months') }}
             </span>
-            <span className="@[540px]/card:hidden">Last 3 months</span>
+            <span className="@[540px]/card:hidden">{{ t('dashboard.last3Months') }}</span>
           </CardDescription>
           <CardAction>
             <ToggleGroup
@@ -158,13 +160,13 @@ setHeader({ title: 'Dashboard', icon: 'i-lucide-layout-dashboard', description: 
               class="hidden *:data-[slot=toggle-group-item]:!px-4 @[767px]/card:flex"
             >
               <ToggleGroupItem value="90d">
-                Last 3 months
+                {{ t('dashboard.last3Months') }}
               </ToggleGroupItem>
               <ToggleGroupItem value="30d">
-                Last 30 days
+                {{ t('dashboard.last30Days') }}
               </ToggleGroupItem>
               <ToggleGroupItem value="7d">
-                Last 7 days
+                {{ t('dashboard.last7Days') }}
               </ToggleGroupItem>
             </ToggleGroup>
             <Select v-model="timeRange">
@@ -173,17 +175,17 @@ setHeader({ title: 'Dashboard', icon: 'i-lucide-layout-dashboard', description: 
                 size="sm"
                 aria-label="Select a value"
               >
-                <SelectValue placeholder="Last 3 months" />
+                <SelectValue :placeholder="t('dashboard.last3Months')" />
               </SelectTrigger>
               <SelectContent class="rounded-xl">
                 <SelectItem value="90d" class="rounded-lg">
-                  Last 3 months
+                  {{ t('dashboard.last3Months') }}
                 </SelectItem>
                 <SelectItem value="30d" class="rounded-lg">
-                  Last 30 days
+                  {{ t('dashboard.last30Days') }}
                 </SelectItem>
                 <SelectItem value="7d" class="rounded-lg">
-                  Last 7 days
+                  {{ t('dashboard.last7Days') }}
                 </SelectItem>
               </SelectContent>
             </Select>

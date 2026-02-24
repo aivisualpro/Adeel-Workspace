@@ -15,7 +15,7 @@ function createColumn() {
 }
 
 const { setHeader } = usePageHeader()
-setHeader({ title: 'Kanban Board', icon: 'i-lucide-kanban', description: 'Visual task management with drag-and-drop' })
+setHeader({ titleKey: 'kanban.title', icon: 'i-lucide-kanban', descriptionKey: 'kanban.description' })
 </script>
 
 <template>

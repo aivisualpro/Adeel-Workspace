@@ -17,11 +17,35 @@ export const navMenu: NavMenu[] = [
         icon: 'i-lucide-mail',
         link: '/email',
       },
+    ],
+  },
+  {
+    heading: 'Project Management',
+    headingKey: 'nav.projectManagement',
+    items: [
+      {
+        title: 'Projects',
+        titleKey: 'nav.projects',
+        icon: 'i-lucide-folder-kanban',
+        link: '/projects/list',
+      },
       {
         title: 'Tasks',
         titleKey: 'nav.tasks',
         icon: 'i-lucide-calendar-check-2',
         link: '/tasks',
+      },
+      {
+        title: 'Timesheets',
+        titleKey: 'nav.timesheets',
+        icon: 'i-lucide-timer',
+        link: '/projects/timesheets',
+      },
+      {
+        title: 'Milestones',
+        titleKey: 'nav.milestones',
+        icon: 'i-lucide-flag',
+        link: '/projects/milestones',
       },
     ],
   },
@@ -242,30 +266,7 @@ export const navMenu: NavMenu[] = [
       },
     ],
   },
-  {
-    heading: 'Project Management',
-    headingKey: 'nav.projectManagement',
-    items: [
-      {
-        title: 'Projects',
-        titleKey: 'nav.projects',
-        icon: 'i-lucide-folder-kanban',
-        link: '/projects/list',
-      },
-      {
-        title: 'Timesheets',
-        titleKey: 'nav.timesheets',
-        icon: 'i-lucide-timer',
-        link: '/projects/timesheets',
-      },
-      {
-        title: 'Milestones',
-        titleKey: 'nav.milestones',
-        icon: 'i-lucide-flag',
-        link: '/projects/milestones',
-      },
-    ],
-  },
+
   {
     heading: 'Support',
     headingKey: 'nav.support',

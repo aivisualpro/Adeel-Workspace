@@ -9,20 +9,21 @@ export type TranslationKey = keyof typeof en
 
 const messages: Record<LocaleCode, Record<string, string>> = { en, es, fr, ar, he }
 
-const currentLocale = ref<LocaleCode>('en')
-
 export function useLocale() {
+  // useCookie must be called inside a composable function (Nuxt instance required)
+  const localeCookie = useCookie<LocaleCode>('app_locale', { default: () => 'en' })
+
   function setLocale(locale: LocaleCode) {
-    currentLocale.value = locale
+    localeCookie.value = locale
   }
 
   function t(key: TranslationKey): string {
-    const locale = currentLocale.value
+    const locale = localeCookie.value
     return messages[locale]?.[key] ?? messages.en[key] ?? key
   }
 
   return {
-    locale: computed(() => currentLocale.value),
+    locale: computed(() => localeCookie.value),
     setLocale,
     t,
   }

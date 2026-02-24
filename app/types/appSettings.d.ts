@@ -8,4 +8,6 @@ export interface AppSettings {
     color?: ThemeColor
     type?: ThemeType
   }
+  direction?: 'ltr' | 'rtl'
+  locale?: string
 }

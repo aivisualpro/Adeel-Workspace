@@ -2,7 +2,7 @@
 import { accounts, mails } from '@/components/mail/data/mails'
 
 const { setHeader } = usePageHeader()
-setHeader({ title: 'Email', icon: 'i-lucide-mail', description: 'Inbox & communications' })
+setHeader({ titleKey: 'email.title', icon: 'i-lucide-mail', descriptionKey: 'email.description' })
 </script>
 
 <template>

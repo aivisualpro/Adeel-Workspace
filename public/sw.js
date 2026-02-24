@@ -1,12 +1,55 @@
-// Self-destructing service worker — clears all caches and unregisters itself
-self.addEventListener('install', () => self.skipWaiting())
+const CACHE_NAME = 'aivisualpro-v1'
+const STATIC_ASSETS = [
+  '/',
+  '/favicon.svg',
+  '/logo-192.png',
+  '/logo-512.png',
+  '/manifest.json',
+]
+
+// Install: cache essential assets
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(STATIC_ASSETS)
+    })
+  )
+  self.skipWaiting()
+})
+
+// Activate: clean old caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.map((cacheName) => caches.delete(cacheName))
+        cacheNames
+          .filter((name) => name !== CACHE_NAME)
+          .map((name) => caches.delete(name))
       )
     }).then(() => self.clients.claim())
-    .then(() => self.registration.unregister())
+  )
+})
+
+// Fetch: network-first strategy
+self.addEventListener('fetch', (event) => {
+  // Skip non-GET requests
+  if (event.request.method !== 'GET') return
+
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        // Cache successful responses
+        if (response.status === 200) {
+          const clone = response.clone()
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, clone)
+          })
+        }
+        return response
+      })
+      .catch(() => {
+        // Fallback to cache
+        return caches.match(event.request)
+      })
   )
 })

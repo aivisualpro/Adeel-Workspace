@@ -699,6 +699,41 @@
       "status": "in progress",
       "label": "bug",
       "priority": "low"
+    },
+    {
+      "id": "TASK-2001",
+      "title": "Write API integration documentation for the CRM module endpoints",
+      "status": "in progress",
+      "label": "documentation",
+      "priority": "high"
+    },
+    {
+      "id": "TASK-2002",
+      "title": "Create user onboarding guide with screenshots and step-by-step instructions",
+      "status": "todo",
+      "label": "documentation",
+      "priority": "medium"
+    },
+    {
+      "id": "TASK-2003",
+      "title": "Document the authentication flow including OAuth2 and SSO configuration",
+      "status": "backlog",
+      "label": "documentation",
+      "priority": "low"
+    },
+    {
+      "id": "TASK-2004",
+      "title": "Update the developer setup guide for the new monorepo structure",
+      "status": "in progress",
+      "label": "documentation",
+      "priority": "medium"
+    },
+    {
+      "id": "TASK-2005",
+      "title": "Write release notes and changelog for the Q1 sprint deliverables",
+      "status": "done",
+      "label": "documentation",
+      "priority": "high"
     }
   ]
 }
