@@ -9,9 +9,9 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4.1-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 [![shadcn/ui](https://img.shields.io/badge/shadcn--vue-2.3-000000?style=for-the-badge&logo=shadcnui&logoColor=white)](https://www.shadcn-vue.com)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](./LICENSE)
 
-[Live Demo](#) · [Report Bug](#) · [Request Feature](#)
+[aivisualpro.com](https://aivisualpro.com)
+
 
 </div>
 
@@ -31,8 +31,7 @@
 - [Pages & Routes](#-pages--routes)
 - [Theming](#-theming)
 - [Tags](#-tags)
-- [Contributing](#-contributing)
-- [License](#-license)
+
 
 ---
 
@@ -108,8 +107,8 @@ This boilerplate eliminates weeks of setup time by providing a fully structured,
 | [ESLint](https://eslint.org) + [@antfu/eslint-config](https://www.npmjs.com/package/@antfu/eslint-config) | Linting & code formatting |
 | [@nuxt/fonts](https://fonts.nuxt.com) | Automatic font optimization |
 | [@nuxtjs/color-mode](https://color-mode.nuxtjs.org) | Dark/light mode switching |
-| [release-it](https://www.npmjs.com/package/release-it) | Automated versioning & releases |
-| [Renovate](https://renovatebot.com) | Automated dependency updates |
+
+
 
 ---
 
@@ -384,7 +383,7 @@ Full **dark mode** and **light mode** support with system preference detection, 
 
 ## 🏷 Tags
 
-`crm` · `boilerplate` · `dashboard` · `admin-panel` · `nuxt4` · `vue3` · `typescript` · `shadcn-vue` · `tailwindcss` · `pinia` · `dark-mode` · `kanban` · `email-client` · `task-management` · `authentication` · `enterprise` · `full-stack` · `responsive` · `accessible` · `open-source`
+`crm` · `boilerplate` · `dashboard` · `admin-panel` · `nuxt4` · `vue3` · `typescript` · `shadcn-vue` · `tailwindcss` · `pinia` · `dark-mode` · `kanban` · `email-client` · `task-management` · `authentication` · `enterprise` · `full-stack` · `responsive` · `accessible` · `aivisualpro`
 
 ---
 
@@ -402,21 +401,9 @@ This boilerplate is designed to be **industry-agnostic** and can be adapted for:
 
 ---
 
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'feat: add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
----
-
 ## 📄 License
 
-This project is licensed under the **MIT License** — see the [LICENSE](./LICENSE) file for details.
+This project is proprietary software owned by **AI Visual Pro**. All rights reserved.
 
 ---
 
