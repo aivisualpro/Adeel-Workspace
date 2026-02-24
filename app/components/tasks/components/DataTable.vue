@@ -35,6 +35,7 @@ const props = withDefaults(defineProps<DataTableProps>(), {
 
 const emit = defineEmits<{
   reorder: [groupKey: string, fromIdx: number, toIdx: number]
+  addTask: []
 }>()
 
 const sorting = ref<SortingState>([])
@@ -234,7 +235,7 @@ onMounted(() => {
 <template>
   <!-- Teleport toolbar to header -->
   <Teleport v-if="isMounted" to="#header-toolbar">
-    <DataTableToolbar :table="table" />
+    <DataTableToolbar :table="table" @add-task="emit('addTask')" />
   </Teleport>
 
   <div>

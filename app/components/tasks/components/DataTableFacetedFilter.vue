@@ -8,14 +8,27 @@ import { cn } from '@/lib/utils'
 interface DataTableFacetedFilter {
   column?: Column<Task, any>
   title?: string
+  titleKey?: string
   options: {
     label: string
+    labelKey?: string
     value: string
     icon?: Component
   }[]
 }
 
 const props = defineProps<DataTableFacetedFilter>()
+const { t } = useLocale()
+
+const displayTitle = computed(() => {
+  if (props.titleKey) return t(props.titleKey as any)
+  return props.title ?? ''
+})
+
+function optionLabel(option: DataTableFacetedFilter['options'][number]) {
+  if (option.labelKey) return t(option.labelKey as any)
+  return option.label
+}
 
 const facets = computed(() => props.column?.getFacetedUniqueValues())
 const selectedValues = computed(() => new Set(props.column?.getFilterValue() as string[]))
@@ -26,7 +39,7 @@ const selectedValues = computed(() => new Set(props.column?.getFilterValue() as 
     <PopoverTrigger as-child>
       <Button variant="outline" size="sm" class="h-8 border-dashed">
         <Icon name="i-radix-icons-plus-circled" class="mr-2 h-4 w-4" />
-        {{ title }}
+        {{ displayTitle }}
         <template v-if="selectedValues.size > 0">
           <Separator orientation="vertical" class="mx-2 h-4" />
           <Badge
@@ -41,7 +54,7 @@ const selectedValues = computed(() => new Set(props.column?.getFilterValue() as 
               variant="secondary"
               class="rounded-sm px-1 font-normal"
             >
-              {{ selectedValues.size }} selected
+              {{ selectedValues.size }} {{ t('tasks.nSelected' as any) }}
             </Badge>
 
             <template v-else>
@@ -52,7 +65,7 @@ const selectedValues = computed(() => new Set(props.column?.getFilterValue() as 
                 variant="secondary"
                 class="rounded-sm px-1 font-normal"
               >
-                {{ item.label }}
+                {{ optionLabel(item) }}
               </Badge>
             </template>
           </div>
@@ -61,11 +74,11 @@ const selectedValues = computed(() => new Set(props.column?.getFilterValue() as 
     </PopoverTrigger>
     <PopoverContent class="w-[200px] p-0" align="start">
       <Command
-        :filter-function="(list: DataTableFacetedFilter['options'], term: any) => list.filter(i => i.label.toLowerCase()?.includes(term))"
+        :filter-function="(list: DataTableFacetedFilter['options'], term: any) => list.filter(i => optionLabel(i).toLowerCase()?.includes(term))"
       >
-        <CommandInput :placeholder="title" />
+        <CommandInput :placeholder="displayTitle" />
         <CommandList>
-          <CommandEmpty>No results found.</CommandEmpty>
+          <CommandEmpty>{{ t('tasks.noResults' as any) }}</CommandEmpty>
           <CommandGroup>
             <CommandItem
               v-for="option in options"
@@ -96,7 +109,7 @@ const selectedValues = computed(() => new Set(props.column?.getFilterValue() as 
                 <Icon name="i-radix-icons-check" :class="cn('h-4 w-4')" />
               </div>
               <component :is="option.icon" v-if="option.icon" class="mr-2 h-4 w-4 text-muted-foreground" />
-              <span>{{ option.label }}</span>
+              <span>{{ optionLabel(option) }}</span>
               <span v-if="facets?.get(option.value)" class="ml-auto h-4 w-4 flex items-center justify-center text-xs font-mono">
                 {{ facets.get(option.value) }}
               </span>
@@ -111,7 +124,7 @@ const selectedValues = computed(() => new Set(props.column?.getFilterValue() as 
                 class="justify-center text-center"
                 @select="column?.setFilterValue(undefined)"
               >
-                Clear filters
+                {{ t('tasks.clearFilters' as any) }}
               </CommandItem>
             </CommandGroup>
           </template>

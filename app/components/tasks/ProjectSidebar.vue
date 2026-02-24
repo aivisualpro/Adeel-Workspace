@@ -85,7 +85,7 @@ const totalTasks = computed(() => {
             <TooltipTrigger as-child>
               <Icon name="lucide:layers" class="size-4" />
             </TooltipTrigger>
-            <TooltipContent side="right">All Projects ({{ totalTasks }})</TooltipContent>
+            <TooltipContent side="right">{{ t('tasks.allProjects') }} ({{ totalTasks }})</TooltipContent>
           </Tooltip>
         </template>
       </button>

@@ -8,6 +8,7 @@ interface DataTableViewOptionsProps {
 }
 
 const props = defineProps<DataTableViewOptionsProps>()
+const { t } = useLocale()
 
 const columns = computed(() => props.table.getAllColumns()
   .filter(
@@ -25,11 +26,11 @@ const columns = computed(() => props.table.getAllColumns()
         class="hidden h-8 lg:flex"
       >
         <Icon name="i-radix-icons-mixer-horizontal" class="mr-2 h-4 w-4" />
-        View
+        {{ t('tasks.view' as any) }}
       </Button>
     </DropdownMenuTrigger>
     <DropdownMenuContent align="end" class="w-[150px]">
-      <DropdownMenuLabel>Toggle columns</DropdownMenuLabel>
+      <DropdownMenuLabel>{{ t('tasks.toggleColumns' as any) }}</DropdownMenuLabel>
       <DropdownMenuSeparator />
 
       <DropdownMenuCheckboxItem

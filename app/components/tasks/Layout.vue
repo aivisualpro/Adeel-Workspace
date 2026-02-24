@@ -3,7 +3,7 @@ import type { Task } from './data/schema'
 import type { ColumnDef } from '@tanstack/vue-table'
 import { useMediaQuery } from '@vueuse/core'
 import { projects, taskProjectMap } from './data/projects'
-import { labels } from './data/data'
+import { labels, statuses, priorities } from './data/data'
 import { cn } from '~/lib/utils'
 import DataTable from './components/DataTable.vue'
 
@@ -55,13 +55,20 @@ const stageCounts = computed(() => {
   return counts
 })
 
+// Use a reactive copy of the data so new tasks are reflected
+const localData = ref<Task[]>([...props.data])
+
+watch(() => props.data, (d) => {
+  localData.value = [...d]
+}, { deep: true })
+
 // Filter tasks based on selected project/stage
 const filteredData = computed(() => {
   if (!selectedProjectId.value) {
-    return props.data
+    return localData.value
   }
 
-  return props.data.filter((task) => {
+  return localData.value.filter((task) => {
     const mapping = taskProjectMap[task.id]
     if (!mapping)
       return false
@@ -252,6 +259,36 @@ const defaultCollapse = useMediaQuery('(max-width: 768px)')
 watch(() => defaultCollapse.value, () => {
   isCollapsed.value = defaultCollapse.value
 })
+
+// Add Task Dialog
+const showAddTaskDialog = ref(false)
+const newTaskTitle = ref('')
+const newTaskStatus = ref('todo')
+const newTaskPriority = ref('medium')
+const newTaskLabel = ref('feature')
+
+
+function openAddTaskDialog() {
+  newTaskTitle.value = ''
+  newTaskStatus.value = 'todo'
+  newTaskPriority.value = 'medium'
+  newTaskLabel.value = 'feature'
+  showAddTaskDialog.value = true
+}
+
+function createTask() {
+  if (!newTaskTitle.value.trim()) return
+  const id = `TASK-${Math.floor(1000 + Math.random() * 9000)}`
+  const task: Task = {
+    id,
+    title: newTaskTitle.value.trim(),
+    status: newTaskStatus.value,
+    priority: newTaskPriority.value,
+    label: newTaskLabel.value,
+  }
+  localData.value = [task, ...localData.value]
+  showAddTaskDialog.value = false
+}
 </script>
 
 <template>
@@ -296,9 +333,75 @@ watch(() => defaultCollapse.value, () => {
             :task-group-map="taskGroupMap"
             :show-grouping="showGrouping"
             @reorder="onReorder"
+            @add-task="openAddTaskDialog"
           />
         </div>
       </ResizablePanel>
     </ResizablePanelGroup>
   </TooltipProvider>
+
+  <!-- Add Task Dialog -->
+  <Dialog v-model:open="showAddTaskDialog">
+    <DialogContent class="sm:max-w-[425px]">
+      <DialogHeader>
+        <DialogTitle>{{ t('tasks.addTask.title' as any) }}</DialogTitle>
+        <DialogDescription>{{ t('tasks.addTask.desc' as any) }}</DialogDescription>
+      </DialogHeader>
+      <div class="grid gap-4 py-4">
+        <div class="grid gap-2">
+          <Label for="task-title">{{ t('tasks.addTask.titleLabel' as any) }}</Label>
+          <Input
+            id="task-title"
+            v-model="newTaskTitle"
+            :placeholder="t('tasks.addTask.titlePlaceholder' as any)"
+          />
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="grid gap-2">
+            <Label>{{ t('tasks.addTask.statusLabel' as any) }}</Label>
+            <Select v-model="newTaskStatus">
+              <SelectTrigger class="h-9">
+                <SelectValue :placeholder="t('tasks.addTask.selectStatus' as any)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="s in statuses" :key="s.value" :value="s.value">
+                  {{ t(s.labelKey as any) }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div class="grid gap-2">
+            <Label>{{ t('tasks.addTask.priorityLabel' as any) }}</Label>
+            <Select v-model="newTaskPriority">
+              <SelectTrigger class="h-9">
+                <SelectValue :placeholder="t('tasks.addTask.selectPriority' as any)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="p in priorities" :key="p.value" :value="p.value">
+                  {{ t(p.labelKey as any) }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div class="grid gap-2">
+            <Label>{{ t('tasks.addTask.labelLabel' as any) }}</Label>
+            <Select v-model="newTaskLabel">
+              <SelectTrigger class="h-9">
+                <SelectValue :placeholder="t('tasks.addTask.selectLabel' as any)" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="l in labels" :key="l.value" :value="l.value">
+                  {{ t(l.labelKey as any) }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+      <DialogFooter>
+        <Button variant="outline" @click="showAddTaskDialog = false">{{ t('common.cancel' as any) }}</Button>
+        <Button :disabled="!newTaskTitle.trim()" @click="createTask">{{ t('tasks.addTask.create' as any) }}</Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>

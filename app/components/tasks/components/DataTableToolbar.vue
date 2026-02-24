@@ -31,13 +31,13 @@ const isFiltered = computed(() => props.table.getState().columnFilters.length > 
       <DataTableFacetedFilter
         v-if="table.getColumn('status')"
         :column="table.getColumn('status')"
-        title="Status"
+        title-key="tasks.col.status"
         :options="statuses"
       />
       <DataTableFacetedFilter
         v-if="table.getColumn('priority')"
         :column="table.getColumn('priority')"
-        title="Priority"
+        title-key="tasks.col.priority"
         :options="priorities"
       />
 
@@ -47,7 +47,7 @@ const isFiltered = computed(() => props.table.getState().columnFilters.length > 
         class="h-8 px-2 lg:px-3"
         @click="table.resetColumnFilters()"
       >
-        Reset
+        {{ t('tasks.reset' as any) }}
         <Icon name="i-radix-icons-cross-2" class="ml-2 h-4 w-4" />
       </Button>
     </div>
