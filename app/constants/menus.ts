@@ -2,6 +2,24 @@ import type { NavMenu, NavMenuItems } from '~/types/nav'
 
 export const navMenu: NavMenu[] = [
   {
+    heading: 'Administration',
+    headingKey: 'nav.administration',
+    items: [
+      {
+        title: 'Users',
+        titleKey: 'nav.users',
+        icon: 'i-lucide-user-cog',
+        link: '/admin/users',
+      },
+      {
+        title: 'Roles & Permissions',
+        titleKey: 'nav.rolesPermissions',
+        icon: 'i-lucide-shield-check',
+        link: '/admin/roles',
+      },
+    ],
+  },
+  {
     heading: 'General',
     headingKey: 'nav.general',
     items: [
@@ -10,6 +28,12 @@ export const navMenu: NavMenu[] = [
         titleKey: 'nav.dashboard',
         icon: 'i-lucide-layout-dashboard',
         link: '/',
+      },
+      {
+        title: 'Customers',
+        titleKey: 'nav.customers',
+        icon: 'i-lucide-users',
+        link: '/customers',
       },
       {
         title: 'Email',
@@ -27,7 +51,7 @@ export const navMenu: NavMenu[] = [
         title: 'Projects',
         titleKey: 'nav.projects',
         icon: 'i-lucide-folder-kanban',
-        link: '/projects/list',
+        link: '/projects/all-projects',
       },
       {
         title: 'Tasks',

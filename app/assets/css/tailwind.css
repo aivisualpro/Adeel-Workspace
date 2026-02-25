@@ -72,7 +72,7 @@
 }
 
 :root {
-  --header-height: 54px;
+  --header-height: 40px;
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -176,10 +176,14 @@
     font-family: var(--font-sans);
     font-synthesis-weight: none;
     text-rendering: optimizeLegibility;
+    height: 100vh;
+    overflow: hidden;
   }
 
   html {
     @apply scroll-smooth;
+    height: 100vh;
+    overflow: hidden;
   }
 
   @supports (font: -apple-system-body) and (-webkit-appearance: none) {

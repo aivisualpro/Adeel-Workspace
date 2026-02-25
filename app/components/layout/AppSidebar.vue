@@ -22,7 +22,7 @@ const teams: {
   plan: string
 }[] = [
   {
-    name: 'AI Visual Pro',
+    name: 'SWSCRM V5',
     logo: 'i-lucide-gallery-vertical-end',
     plan: 'Enterprise',
   },

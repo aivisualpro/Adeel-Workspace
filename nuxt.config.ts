@@ -76,5 +76,28 @@ export default defineNuxtConfig({
     ],
   },
 
+  runtimeConfig: {
+    // Server-only keys (never exposed to the client)
+    // Nuxt auto-maps NUXT_BIGQUERY_PROJECT_ID → runtimeConfig.bigquery.projectId
+    bigquery: {
+      projectId: '',
+      dataset: '',
+      clientEmail: '',
+      privateKeyId: '',
+      privateKey: '',
+    },
+    // NUXT_DRIVE_* → runtimeConfig.drive.*
+    drive: {
+      email: '',         // NUXT_DRIVE_EMAIL
+      clientId: '',      // NUXT_DRIVE_CLIENT_ID
+      clientSecret: '',  // NUXT_DRIVE_CLIENT_SECRET
+      refreshToken: '',  // NUXT_DRIVE_REFRESH_TOKEN
+    },
+    // Public keys (exposed to the client browser)
+    public: {
+      driveEmail: '', // NUXT_PUBLIC_DRIVE_EMAIL
+    },
+  },
+
   compatibilityDate: '2024-12-14',
 })

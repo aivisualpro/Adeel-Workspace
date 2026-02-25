@@ -42,19 +42,19 @@ useHead({
   },
 })
 
-const title = 'AI Visual Pro — Enterprise ERP & CRM Platform'
-const description = 'A comprehensive enterprise resource planning and CRM platform by AI Visual Pro. Built with Nuxt 4, Shadcn Vue, and TailwindCSS — featuring 12+ modules, full CRUD, dark mode, and multi-theme support.'
+const title = 'SWSCRM V5 — Enterprise ERP & CRM Platform'
+const description = 'A comprehensive enterprise resource planning and CRM platform. SWSCRM V5 — featuring full CRUD, dark mode, BigQuery integration, and multi-module support.'
 
 useSeoMeta({
   title,
   description,
   ogTitle: title,
   ogDescription: description,
-  ogUrl: 'https://aivisualpro.com',
-  ogImage: 'https://aivisualpro.com/social-card.png',
+  ogUrl: 'http://sws.123crm.net/',
+  ogImage: 'http://sws.123crm.net/logo-512.png',
   twitterTitle: title,
   twitterDescription: description,
-  twitterImage: 'https://aivisualpro.com/social-card.png',
+  twitterImage: 'http://sws.123crm.net/logo-512.png',
   twitterCard: 'summary_large_image',
 })
 
@@ -69,7 +69,7 @@ defineShortcuts({
 <template>
   <Body class="overscroll-none antialiased bg-background text-foreground">
     <ConfigProvider :dir="dir">
-      <div id="app" vaul-drawer-wrapper class="relative">
+      <div id="app" vaul-drawer-wrapper class="relative h-screen overflow-hidden">
         <NuxtLayout>
           <NuxtPage />
         </NuxtLayout>
