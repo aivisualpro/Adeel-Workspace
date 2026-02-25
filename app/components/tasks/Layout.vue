@@ -87,8 +87,16 @@ function updateTask(taskId: string, updates: Partial<Task>) {
   )
 }
 
+function deleteTask(taskId: string) {
+  localData.value = localData.value.filter(t => t.id !== taskId)
+  // Clean up project mapping
+  delete taskProjectMap[taskId]
+}
+
 provide('task-table-context', {
   updateTask,
+  deleteTask,
+  openTaskDetail,
   availableAssignees: [
     { id: 'u1', name: 'Adeel Jabbar', avatar: '/avatars/adeel.png' },
     { id: 'u2', name: 'Sarah Khan', avatar: '' },
