@@ -10,6 +10,7 @@ export default {
 
   // Nav Items — Apps
   'nav.kanbanBoard': 'لوحة كانبان',
+  'nav.databaseCreator': 'منشئ قواعد البيانات',
 
   // Nav Items — CRM
   'nav.contacts': 'جهات الاتصال',

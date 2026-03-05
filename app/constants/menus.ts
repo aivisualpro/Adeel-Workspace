@@ -23,6 +23,12 @@ export const navMenu: NavMenu[] = [
         icon: 'i-lucide-kanban',
         link: '/kanban',
       },
+      {
+        title: 'Database Creator',
+        titleKey: 'nav.databaseCreator',
+        icon: 'i-lucide-database',
+        link: '/database-creator',
+      },
     ],
   },
   {

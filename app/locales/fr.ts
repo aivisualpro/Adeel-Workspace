@@ -10,6 +10,7 @@ export default {
 
   // Nav Items — Apps
   'nav.kanbanBoard': 'Tableau Kanban',
+  'nav.databaseCreator': 'Créateur de Base de Données',
 
   // Nav Items — CRM
   'nav.contacts': 'Contacts',

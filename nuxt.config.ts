@@ -4,6 +4,10 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   spaLoadingTemplate: false,
 
+  runtimeConfig: {
+    mongodbUri: '',
+  },
+
   watch: ['~/app.config.ts'],
 
   css: ['~/assets/css/tailwind.css'],
