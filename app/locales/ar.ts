@@ -1,28 +1,15 @@
 export default {
   // Navigation Headings
-  'nav.general': 'عام',
   'nav.apps': 'التطبيقات',
   'nav.crm': 'إدارة العلاقات',
   'nav.salesCommerce': 'المبيعات والتجارة',
-  'nav.inventoryWarehouse': 'المخزون والمستودعات',
-  'nav.hrWorkforce': 'الموارد البشرية',
-  'nav.financeAccounting': 'المالية والمحاسبة',
   'nav.projectManagement': 'إدارة المشاريع',
-  'nav.support': 'الدعم',
-  'nav.marketing': 'التسويق',
-  'nav.reports': 'التقارير',
   'nav.pages': 'الصفحات',
   'nav.components': 'المكونات',
   'nav.documentation': 'التوثيق',
 
-  // Nav Items — General
-  'nav.dashboard': 'لوحة التحكم',
-  'nav.email': 'البريد الإلكتروني',
-  'nav.tasks': 'المهام',
-
   // Nav Items — Apps
   'nav.kanbanBoard': 'لوحة كانبان',
-  'nav.ganttChart': 'مخطط جانت',
 
   // Nav Items — CRM
   'nav.contacts': 'جهات الاتصال',
@@ -38,48 +25,8 @@ export default {
   'nav.products': 'المنتجات',
   'nav.customers': 'العملاء',
 
-  // Nav Items — Inventory
-  'nav.stockOverview': 'نظرة عامة على المخزون',
-  'nav.transfers': 'التحويلات',
-  'nav.purchaseOrders': 'أوامر الشراء',
-  'nav.vendors': 'الموردين',
-
-  // Nav Items — HR
-  'nav.employees': 'الموظفين',
-  'nav.attendance': 'الحضور',
-  'nav.payroll': 'الرواتب',
-  'nav.recruitment': 'التوظيف',
-  'nav.leaveMgmt': 'إدارة الإجازات',
-
-  // Nav Items — Finance
-  'nav.accounts': 'الحسابات',
-  'nav.transactions': 'المعاملات',
-  'nav.expenses': 'المصروفات',
-  'nav.taxManagement': 'إدارة الضرائب',
-  'nav.balanceSheet': 'الميزانية العمومية',
-  'nav.incomeStatement': 'قائمة الدخل',
-  'nav.financialRatios': 'النسب المالية',
-  'nav.businessHealth': 'صحة الأعمال',
-
   // Nav Items — Project Management
   'nav.projects': 'المشاريع',
-  'nav.timesheets': 'سجلات الوقت',
-  'nav.milestones': 'المعالم',
-
-  // Nav Items — Support
-  'nav.tickets': 'التذاكر',
-  'nav.knowledgeBase': 'قاعدة المعرفة',
-  'nav.liveChat': 'الدردشة المباشرة',
-
-  // Nav Items — Marketing
-  'nav.campaigns': 'الحملات',
-  'nav.emailBlasts': 'الرسائل الجماعية',
-  'nav.analytics': 'التحليلات',
-
-  // Nav Items — Reports
-  'nav.salesReports': 'تقارير المبيعات',
-  'nav.financialReports': 'التقارير المالية',
-  'nav.hrReports': 'تقارير الموارد البشرية',
 
   // Nav Items — Pages
   'nav.authentication': 'المصادقة',
@@ -95,110 +42,6 @@ export default {
   'nav.appearance': 'المظهر',
   'nav.notifications': 'الإشعارات',
   'nav.display': 'العرض',
-
-  // Nav Bottom
-  'nav.helpSupport': 'المساعدة والدعم',
-  'nav.feedback': 'الملاحظات',
-
-  // Dashboard
-  'dashboard.title': 'لوحة التحكم',
-  'dashboard.description': 'نظرة عامة على المقاييس الرئيسية والأداء',
-  'dashboard.totalRevenue': 'إجمالي الإيرادات',
-  'dashboard.newCustomers': 'عملاء جدد',
-  'dashboard.activeAccounts': 'الحسابات النشطة',
-  'dashboard.growthRate': 'معدل النمو',
-  'dashboard.trendingUp': 'اتجاه تصاعدي هذا الشهر',
-  'dashboard.down20': 'انخفاض 20% هذه الفترة',
-  'dashboard.acquisitionAttention': 'الاستحواذ يحتاج اهتمام',
-  'dashboard.strongRetention': 'احتفاظ قوي بالمستخدمين',
-  'dashboard.engagementExceed': 'التفاعل يتجاوز الأهداف',
-  'dashboard.steadyPerformance': 'زيادة مستمرة في الأداء',
-  'dashboard.meetsGrowth': 'يلبي توقعات النمو',
-  'dashboard.totalVisitors': 'إجمالي الزوار',
-  'dashboard.totalLast3Months': 'الإجمالي لآخر 3 أشهر',
-  'dashboard.last3Months': 'آخر 3 أشهر',
-  'dashboard.last30Days': 'آخر 30 يوم',
-  'dashboard.last7Days': 'آخر 7 أيام',
-  'dashboard.visitorsLast6Months': 'الزوار خلال 6 أشهر الأخيرة',
-  'dashboard.download': 'تحميل',
-
-  // Tasks
-  'tasks.title': 'المهام',
-  'tasks.description': 'إليك قائمة مهامك لهذا الشهر!',
-  'tasks.allTasks': 'جميع المهام',
-  'tasks.task': 'مهمة',
-  'tasks.tasks': 'مهام',
-  'tasks.projects': 'المشاريع',
-  'tasks.all': 'الكل',
-  'tasks.allProjects': 'كل المشاريع',
-  'tasks.filterPlaceholder': 'تصفية المهام...',
-  'tasks.loadingMore': 'جاري تحميل المزيد…',
-  'tasks.noResults': 'لا توجد نتائج.',
-  'tasks.col.sno': '#',
-  'tasks.col.title': 'العنوان',
-  'tasks.col.status': 'الحالة',
-  'tasks.col.assignees': 'المكلفون',
-  'tasks.col.priority': 'الأولوية',
-  'tasks.col.createdAt': 'تاريخ الإنشاء',
-  'tasks.col.dueDate': 'تاريخ الاستحقاق',
-  'tasks.label.bug': 'خطأ',
-  'tasks.label.feature': 'ميزة',
-  'tasks.label.documentation': 'توثيق',
-  'tasks.status.backlog': 'قائمة الانتظار',
-  'tasks.status.todo': 'للتنفيذ',
-  'tasks.status.inProgress': 'قيد التنفيذ',
-  'tasks.status.done': 'مكتمل',
-  'tasks.status.canceled': 'ملغي',
-  'tasks.priority.low': 'منخفضة',
-  'tasks.priority.medium': 'متوسطة',
-  'tasks.priority.high': 'عالية',
-  'tasks.addTask': 'إضافة مهمة',
-  'tasks.reset': 'إعادة تعيين',
-  'tasks.clearFilters': 'مسح الفلاتر',
-  'tasks.view': 'عرض',
-  'tasks.toggleColumns': 'تبديل الأعمدة',
-  'tasks.sortAsc': 'تصاعدي',
-  'tasks.sortDesc': 'تنازلي',
-  'tasks.hide': 'إخفاء',
-  'tasks.nSelected': 'محدد',
-  'tasks.actions.edit': 'تعديل',
-  'tasks.actions.copy': 'إنشاء نسخة',
-  'tasks.actions.favorite': 'مفضلة',
-  'tasks.actions.labels': 'التصنيفات',
-  'tasks.actions.delete': 'حذف',
-  'tasks.actions.openMenu': 'فتح القائمة',
-  'tasks.addTask.title': 'مهمة جديدة',
-  'tasks.addTask.desc': 'املأ التفاصيل لإنشاء مهمة جديدة.',
-  'tasks.addTask.projectLabel': 'المشروع',
-  'tasks.addTask.selectProject': 'اختر مشروع',
-  'tasks.addTask.phaseLabel': 'المرحلة',
-  'tasks.addTask.selectPhase': 'اختر مرحلة',
-  'tasks.addTask.categoryLabel': 'الفئة',
-  'tasks.addTask.selectCategory': 'اختر فئة',
-  'tasks.addTask.titleLabel': 'المهمة',
-  'tasks.addTask.titlePlaceholder': 'أدخل عنوان المهمة...',
-  'tasks.addTask.assigneesLabel': 'المكلفون',
-  'tasks.addTask.selectAssignees': 'اختر المكلفين',
-  'tasks.addTask.statusLabel': 'الحالة',
-  'tasks.addTask.priorityLabel': 'الأولوية',
-  'tasks.addTask.selectStatus': 'اختر الحالة',
-  'tasks.addTask.selectPriority': 'اختر الأولوية',
-  'tasks.addTask.dueDateLabel': 'تاريخ الاستحقاق',
-  'tasks.addTask.create': 'إنشاء مهمة',
-  'tasks.due.overdue': 'متأخر',
-  'tasks.due.dueToday': 'مستحق اليوم',
-  'tasks.due.dueSoon': 'مستحق قريباً',
-  'tasks.due.left': 'متبقي',
-  'tasks.due.ago': 'مضى',
-  'tasks.due.today': 'اليوم',
-
-  // Email
-  'email.title': 'البريد الإلكتروني',
-  'email.description': 'البريد الوارد والاتصالات',
-  'email.inbox': 'البريد الوارد',
-  'email.allMail': 'كل البريد',
-  'email.unread': 'غير مقروء',
-  'email.search': 'بحث',
 
   // Kanban
   'kanban.title': 'لوحة كانبان',

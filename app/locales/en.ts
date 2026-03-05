@@ -1,28 +1,15 @@
 export default {
   // Navigation Headings
-  'nav.general': 'General',
   'nav.apps': 'Apps',
   'nav.crm': 'CRM',
   'nav.salesCommerce': 'Sales & Commerce',
-  'nav.inventoryWarehouse': 'Inventory & Warehouse',
-  'nav.hrWorkforce': 'HR & Workforce',
-  'nav.financeAccounting': 'Finance & Accounting',
   'nav.projectManagement': 'Project Management',
-  'nav.support': 'Support',
-  'nav.marketing': 'Marketing',
-  'nav.reports': 'Reports',
   'nav.pages': 'Pages',
   'nav.components': 'Components',
   'nav.documentation': 'Documentation',
 
-  // Nav Items — General
-  'nav.dashboard': 'Dashboard',
-  'nav.email': 'Email',
-  'nav.tasks': 'Tasks',
-
   // Nav Items — Apps
   'nav.kanbanBoard': 'Kanban Board',
-  'nav.ganttChart': 'Gantt Chart',
 
   // Nav Items — CRM
   'nav.contacts': 'Contacts',
@@ -38,48 +25,8 @@ export default {
   'nav.products': 'Products',
   'nav.customers': 'Customers',
 
-  // Nav Items — Inventory
-  'nav.stockOverview': 'Stock Overview',
-  'nav.transfers': 'Transfers',
-  'nav.purchaseOrders': 'Purchase Orders',
-  'nav.vendors': 'Vendors',
-
-  // Nav Items — HR
-  'nav.employees': 'Employees',
-  'nav.attendance': 'Attendance',
-  'nav.payroll': 'Payroll',
-  'nav.recruitment': 'Recruitment',
-  'nav.leaveMgmt': 'Leave Mgmt',
-
-  // Nav Items — Finance
-  'nav.accounts': 'Accounts',
-  'nav.transactions': 'Transactions',
-  'nav.expenses': 'Expenses',
-  'nav.taxManagement': 'Tax Management',
-  'nav.balanceSheet': 'Balance Sheet',
-  'nav.incomeStatement': 'Income Statement',
-  'nav.financialRatios': 'Financial Ratios',
-  'nav.businessHealth': 'Business Health',
-
   // Nav Items — Project Management
   'nav.projects': 'Projects',
-  'nav.timesheets': 'Timesheets',
-  'nav.milestones': 'Milestones',
-
-  // Nav Items — Support
-  'nav.tickets': 'Tickets',
-  'nav.knowledgeBase': 'Knowledge Base',
-  'nav.liveChat': 'Live Chat',
-
-  // Nav Items — Marketing
-  'nav.campaigns': 'Campaigns',
-  'nav.emailBlasts': 'Email Blasts',
-  'nav.analytics': 'Analytics',
-
-  // Nav Items — Reports
-  'nav.salesReports': 'Sales Reports',
-  'nav.financialReports': 'Financial Reports',
-  'nav.hrReports': 'HR Reports',
 
   // Nav Items — Pages
   'nav.authentication': 'Authentication',
@@ -96,109 +43,7 @@ export default {
   'nav.notifications': 'Notifications',
   'nav.display': 'Display',
 
-  // Nav Bottom
-  'nav.helpSupport': 'Help & Support',
-  'nav.feedback': 'Feedback',
 
-  // Dashboard
-  'dashboard.title': 'Dashboard',
-  'dashboard.description': 'Overview of key metrics and performance',
-  'dashboard.totalRevenue': 'Total Revenue',
-  'dashboard.newCustomers': 'New Customers',
-  'dashboard.activeAccounts': 'Active Accounts',
-  'dashboard.growthRate': 'Growth Rate',
-  'dashboard.trendingUp': 'Trending up this month',
-  'dashboard.down20': 'Down 20% this period',
-  'dashboard.acquisitionAttention': 'Acquisition needs attention',
-  'dashboard.strongRetention': 'Strong user retention',
-  'dashboard.engagementExceed': 'Engagement exceed targets',
-  'dashboard.steadyPerformance': 'Steady performance increase',
-  'dashboard.meetsGrowth': 'Meets growth projections',
-  'dashboard.totalVisitors': 'Total Visitors',
-  'dashboard.totalLast3Months': 'Total for the last 3 months',
-  'dashboard.last3Months': 'Last 3 months',
-  'dashboard.last30Days': 'Last 30 days',
-  'dashboard.last7Days': 'Last 7 days',
-  'dashboard.visitorsLast6Months': 'Visitors for the last 6 months',
-  'dashboard.download': 'Download',
-
-  // Tasks
-  'tasks.title': 'Tasks',
-  'tasks.description': "Here's a list of your tasks for this month!",
-  'tasks.allTasks': 'All Tasks',
-  'tasks.task': 'task',
-  'tasks.tasks': 'tasks',
-  'tasks.projects': 'Projects',
-  'tasks.all': 'All',
-  'tasks.allProjects': 'All Projects',
-  'tasks.filterPlaceholder': 'Filter tasks...',
-  'tasks.loadingMore': 'Loading more…',
-  'tasks.noResults': 'No results.',
-  'tasks.col.sno': '#',
-  'tasks.col.title': 'Title',
-  'tasks.col.status': 'Status',
-  'tasks.col.assignees': 'Assignees',
-  'tasks.col.priority': 'Priority',
-  'tasks.col.createdAt': 'Created',
-  'tasks.col.dueDate': 'Due Date',
-  'tasks.label.bug': 'Bug',
-  'tasks.label.feature': 'Feature',
-  'tasks.label.documentation': 'Documentation',
-  'tasks.status.backlog': 'Backlog',
-  'tasks.status.todo': 'Todo',
-  'tasks.status.inProgress': 'In Progress',
-  'tasks.status.done': 'Done',
-  'tasks.status.canceled': 'Canceled',
-  'tasks.priority.low': 'Low',
-  'tasks.priority.medium': 'Medium',
-  'tasks.priority.high': 'High',
-  'tasks.addTask': 'Add Task',
-  'tasks.reset': 'Reset',
-  'tasks.clearFilters': 'Clear filters',
-  'tasks.view': 'View',
-  'tasks.toggleColumns': 'Toggle columns',
-  'tasks.sortAsc': 'Asc',
-  'tasks.sortDesc': 'Desc',
-  'tasks.hide': 'Hide',
-  'tasks.nSelected': 'selected',
-  'tasks.actions.edit': 'Edit',
-  'tasks.actions.copy': 'Make a copy',
-  'tasks.actions.favorite': 'Favorite',
-  'tasks.actions.labels': 'Labels',
-  'tasks.actions.delete': 'Delete',
-  'tasks.actions.openMenu': 'Open menu',
-  'tasks.addTask.title': 'New Task',
-  'tasks.addTask.desc': 'Fill in the details to create a new task.',
-  'tasks.addTask.projectLabel': 'Project',
-  'tasks.addTask.selectProject': 'Select project',
-  'tasks.addTask.phaseLabel': 'Phase',
-  'tasks.addTask.selectPhase': 'Select phase',
-  'tasks.addTask.categoryLabel': 'Category',
-  'tasks.addTask.selectCategory': 'Select category',
-  'tasks.addTask.titleLabel': 'Task',
-  'tasks.addTask.titlePlaceholder': 'Enter task title...',
-  'tasks.addTask.assigneesLabel': 'Assignees',
-  'tasks.addTask.selectAssignees': 'Select assignees',
-  'tasks.addTask.statusLabel': 'Status',
-  'tasks.addTask.priorityLabel': 'Priority',
-  'tasks.addTask.selectStatus': 'Select status',
-  'tasks.addTask.selectPriority': 'Select priority',
-  'tasks.addTask.dueDateLabel': 'Due Date',
-  'tasks.addTask.create': 'Create Task',
-  'tasks.due.overdue': 'Overdue',
-  'tasks.due.dueToday': 'Due today',
-  'tasks.due.dueSoon': 'Due soon',
-  'tasks.due.left': 'left',
-  'tasks.due.ago': 'ago',
-  'tasks.due.today': 'Today',
-
-  // Email
-  'email.title': 'Email',
-  'email.description': 'Inbox & communications',
-  'email.inbox': 'Inbox',
-  'email.allMail': 'All mail',
-  'email.unread': 'Unread',
-  'email.search': 'Search',
 
   // Kanban
   'kanban.title': 'Kanban Board',

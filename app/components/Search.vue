@@ -43,18 +43,11 @@ function handleSelectLink(link: string) {
     <CommandList>
       <CommandEmpty>{{ t('common.noResults') }}</CommandEmpty>
       <CommandGroup heading="Suggestions">
-        <CommandItem value="Home" @select="handleSelectLink('/')">
-          {{ t('nav.dashboard') }}
+        <CommandItem value="Projects" @select="handleSelectLink('/projects/list')">
+          {{ t('nav.projects') }}
           <CommandShortcut>
             <Kbd>G</Kbd>
             <Kbd>H</Kbd>
-          </CommandShortcut>
-        </CommandItem>
-        <CommandItem value="email" @select="handleSelectLink('/email')">
-          {{ t('nav.email') }}
-          <CommandShortcut>
-            <Kbd>G</Kbd>
-            <Kbd>E</Kbd>
           </CommandShortcut>
         </CommandItem>
       </CommandGroup>

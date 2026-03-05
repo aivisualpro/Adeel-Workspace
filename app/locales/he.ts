@@ -1,28 +1,15 @@
 export default {
   // Navigation Headings
-  'nav.general': 'כללי',
   'nav.apps': 'אפליקציות',
   'nav.crm': 'ניהול לקוחות',
   'nav.salesCommerce': 'מכירות ומסחר',
-  'nav.inventoryWarehouse': 'מלאי ומחסן',
-  'nav.hrWorkforce': 'משאבי אנוש',
-  'nav.financeAccounting': 'כספים וחשבונאות',
   'nav.projectManagement': 'ניהול פרויקטים',
-  'nav.support': 'תמיכה',
-  'nav.marketing': 'שיווק',
-  'nav.reports': 'דוחות',
   'nav.pages': 'דפים',
   'nav.components': 'רכיבים',
   'nav.documentation': 'תיעוד',
 
-  // Nav Items — General
-  'nav.dashboard': 'לוח בקרה',
-  'nav.email': 'דוא״ל',
-  'nav.tasks': 'משימות',
-
   // Nav Items — Apps
   'nav.kanbanBoard': 'לוח קנבן',
-  'nav.ganttChart': 'תרשים גנט',
 
   // Nav Items — CRM
   'nav.contacts': 'אנשי קשר',
@@ -38,48 +25,8 @@ export default {
   'nav.products': 'מוצרים',
   'nav.customers': 'לקוחות',
 
-  // Nav Items — Inventory
-  'nav.stockOverview': 'סקירת מלאי',
-  'nav.transfers': 'העברות',
-  'nav.purchaseOrders': 'הזמנות רכש',
-  'nav.vendors': 'ספקים',
-
-  // Nav Items — HR
-  'nav.employees': 'עובדים',
-  'nav.attendance': 'נוכחות',
-  'nav.payroll': 'שכר',
-  'nav.recruitment': 'גיוס',
-  'nav.leaveMgmt': 'ניהול חופשות',
-
-  // Nav Items — Finance
-  'nav.accounts': 'חשבונות',
-  'nav.transactions': 'עסקאות',
-  'nav.expenses': 'הוצאות',
-  'nav.taxManagement': 'ניהול מיסים',
-  'nav.balanceSheet': 'מאזן',
-  'nav.incomeStatement': 'דוח רווח והפסד',
-  'nav.financialRatios': 'יחסים פיננסיים',
-  'nav.businessHealth': 'בריאות עסקית',
-
   // Nav Items — Project Management
   'nav.projects': 'פרויקטים',
-  'nav.timesheets': 'גיליונות זמן',
-  'nav.milestones': 'אבני דרך',
-
-  // Nav Items — Support
-  'nav.tickets': 'פניות',
-  'nav.knowledgeBase': 'מאגר ידע',
-  'nav.liveChat': 'צ\'אט חי',
-
-  // Nav Items — Marketing
-  'nav.campaigns': 'קמפיינים',
-  'nav.emailBlasts': 'דיוור המוני',
-  'nav.analytics': 'אנליטיקה',
-
-  // Nav Items — Reports
-  'nav.salesReports': 'דוחות מכירות',
-  'nav.financialReports': 'דוחות כספיים',
-  'nav.hrReports': 'דוחות משאבי אנוש',
 
   // Nav Items — Pages
   'nav.authentication': 'אימות',
@@ -95,110 +42,6 @@ export default {
   'nav.appearance': 'מראה',
   'nav.notifications': 'התראות',
   'nav.display': 'תצוגה',
-
-  // Nav Bottom
-  'nav.helpSupport': 'עזרה ותמיכה',
-  'nav.feedback': 'משוב',
-
-  // Dashboard
-  'dashboard.title': 'לוח בקרה',
-  'dashboard.description': 'סקירת מדדים מרכזיים וביצועים',
-  'dashboard.totalRevenue': 'סה״כ הכנסות',
-  'dashboard.newCustomers': 'לקוחות חדשים',
-  'dashboard.activeAccounts': 'חשבונות פעילים',
-  'dashboard.growthRate': 'קצב צמיחה',
-  'dashboard.trendingUp': 'מגמת עלייה החודש',
-  'dashboard.down20': 'ירידה של 20% בתקופה זו',
-  'dashboard.acquisitionAttention': 'הרכישה דורשת תשומת לב',
-  'dashboard.strongRetention': 'שימור חזק של משתמשים',
-  'dashboard.engagementExceed': 'המעורבות עולה על היעדים',
-  'dashboard.steadyPerformance': 'עלייה יציבה בביצועים',
-  'dashboard.meetsGrowth': 'עומד בתחזיות הצמיחה',
-  'dashboard.totalVisitors': 'סה״כ מבקרים',
-  'dashboard.totalLast3Months': 'סה״כ ל-3 חודשים אחרונים',
-  'dashboard.last3Months': '3 חודשים אחרונים',
-  'dashboard.last30Days': '30 ימים אחרונים',
-  'dashboard.last7Days': '7 ימים אחרונים',
-  'dashboard.visitorsLast6Months': 'מבקרים ב-6 חודשים אחרונים',
-  'dashboard.download': 'הורדה',
-
-  // Tasks
-  'tasks.title': 'משימות',
-  'tasks.description': 'הנה רשימת המשימות שלך לחודש זה!',
-  'tasks.allTasks': 'כל המשימות',
-  'tasks.task': 'משימה',
-  'tasks.tasks': 'משימות',
-  'tasks.projects': 'פרויקטים',
-  'tasks.all': 'הכל',
-  'tasks.allProjects': 'כל הפרויקטים',
-  'tasks.filterPlaceholder': 'סינון משימות...',
-  'tasks.loadingMore': 'טוען עוד…',
-  'tasks.noResults': 'אין תוצאות.',
-  'tasks.col.sno': '#',
-  'tasks.col.title': 'כותרת',
-  'tasks.col.status': 'סטטוס',
-  'tasks.col.assignees': 'משויכים',
-  'tasks.col.priority': 'עדיפות',
-  'tasks.col.createdAt': 'תאריך יצירה',
-  'tasks.col.dueDate': 'תאריך יעד',
-  'tasks.label.bug': 'באג',
-  'tasks.label.feature': 'פיצ\'ר',
-  'tasks.label.documentation': 'תיעוד',
-  'tasks.status.backlog': 'ממתין',
-  'tasks.status.todo': 'לביצוע',
-  'tasks.status.inProgress': 'בתהליך',
-  'tasks.status.done': 'הושלם',
-  'tasks.status.canceled': 'בוטל',
-  'tasks.priority.low': 'נמוכה',
-  'tasks.priority.medium': 'בינונית',
-  'tasks.priority.high': 'גבוהה',
-  'tasks.addTask': 'הוסף משימה',
-  'tasks.reset': 'איפוס',
-  'tasks.clearFilters': 'נקה מסננים',
-  'tasks.view': 'תצוגה',
-  'tasks.toggleColumns': 'החלפת עמודות',
-  'tasks.sortAsc': 'עולה',
-  'tasks.sortDesc': 'יורד',
-  'tasks.hide': 'הסתר',
-  'tasks.nSelected': 'נבחרו',
-  'tasks.actions.edit': 'עריכה',
-  'tasks.actions.copy': 'צור עותק',
-  'tasks.actions.favorite': 'מועדף',
-  'tasks.actions.labels': 'תגיות',
-  'tasks.actions.delete': 'מחיקה',
-  'tasks.actions.openMenu': 'פתח תפריט',
-  'tasks.addTask.title': 'משימה חדשה',
-  'tasks.addTask.desc': 'מלא את הפרטים ליצירת משימה חדשה.',
-  'tasks.addTask.projectLabel': 'פרויקט',
-  'tasks.addTask.selectProject': 'בחר פרויקט',
-  'tasks.addTask.phaseLabel': 'שלב',
-  'tasks.addTask.selectPhase': 'בחר שלב',
-  'tasks.addTask.categoryLabel': 'קטגוריה',
-  'tasks.addTask.selectCategory': 'בחר קטגוריה',
-  'tasks.addTask.titleLabel': 'משימה',
-  'tasks.addTask.titlePlaceholder': 'הזן כותרת משימה...',
-  'tasks.addTask.assigneesLabel': 'מבצעים',
-  'tasks.addTask.selectAssignees': 'בחר מבצעים',
-  'tasks.addTask.statusLabel': 'סטטוס',
-  'tasks.addTask.priorityLabel': 'עדיפות',
-  'tasks.addTask.selectStatus': 'בחר סטטוס',
-  'tasks.addTask.selectPriority': 'בחר עדיפות',
-  'tasks.addTask.dueDateLabel': 'תאריך יעד',
-  'tasks.addTask.create': 'צור משימה',
-  'tasks.due.overdue': 'באיחור',
-  'tasks.due.dueToday': 'מועד היום',
-  'tasks.due.dueSoon': 'מועד בקרוב',
-  'tasks.due.left': 'נותרו',
-  'tasks.due.ago': 'עברו',
-  'tasks.due.today': 'היום',
-
-  // Email
-  'email.title': 'דוא״ל',
-  'email.description': 'תיבת דואר ותקשורת',
-  'email.inbox': 'תיבת דואר נכנס',
-  'email.allMail': 'כל הדואר',
-  'email.unread': 'לא נקרא',
-  'email.search': 'חיפוש',
 
   // Kanban
   'kanban.title': 'לוח קנבן',

@@ -1,28 +1,15 @@
 export default {
   // Navigation Headings
-  'nav.general': 'Général',
   'nav.apps': 'Applications',
   'nav.crm': 'CRM',
   'nav.salesCommerce': 'Ventes et Commerce',
-  'nav.inventoryWarehouse': 'Inventaire et Entrepôt',
-  'nav.hrWorkforce': 'RH et Personnel',
-  'nav.financeAccounting': 'Finance et Comptabilité',
   'nav.projectManagement': 'Gestion de Projets',
-  'nav.support': 'Support',
-  'nav.marketing': 'Marketing',
-  'nav.reports': 'Rapports',
   'nav.pages': 'Pages',
   'nav.components': 'Composants',
   'nav.documentation': 'Documentation',
 
-  // Nav Items — General
-  'nav.dashboard': 'Tableau de Bord',
-  'nav.email': 'E-mail',
-  'nav.tasks': 'Tâches',
-
   // Nav Items — Apps
   'nav.kanbanBoard': 'Tableau Kanban',
-  'nav.ganttChart': 'Diagramme de Gantt',
 
   // Nav Items — CRM
   'nav.contacts': 'Contacts',
@@ -38,48 +25,8 @@ export default {
   'nav.products': 'Produits',
   'nav.customers': 'Clients',
 
-  // Nav Items — Inventory
-  'nav.stockOverview': 'Aperçu des Stocks',
-  'nav.transfers': 'Transferts',
-  'nav.purchaseOrders': 'Bons de Commande',
-  'nav.vendors': 'Fournisseurs',
-
-  // Nav Items — HR
-  'nav.employees': 'Employés',
-  'nav.attendance': 'Présence',
-  'nav.payroll': 'Paie',
-  'nav.recruitment': 'Recrutement',
-  'nav.leaveMgmt': 'Gestion des Congés',
-
-  // Nav Items — Finance
-  'nav.accounts': 'Comptes',
-  'nav.transactions': 'Transactions',
-  'nav.expenses': 'Dépenses',
-  'nav.taxManagement': 'Gestion Fiscale',
-  'nav.balanceSheet': 'Bilan',
-  'nav.incomeStatement': 'Compte de Résultat',
-  'nav.financialRatios': 'Ratios Financiers',
-  'nav.businessHealth': 'Santé de l\'Entreprise',
-
   // Nav Items — Project Management
   'nav.projects': 'Projets',
-  'nav.timesheets': 'Feuilles de Temps',
-  'nav.milestones': 'Jalons',
-
-  // Nav Items — Support
-  'nav.tickets': 'Tickets',
-  'nav.knowledgeBase': 'Base de Connaissances',
-  'nav.liveChat': 'Chat en Direct',
-
-  // Nav Items — Marketing
-  'nav.campaigns': 'Campagnes',
-  'nav.emailBlasts': 'Envois Massifs',
-  'nav.analytics': 'Analytiques',
-
-  // Nav Items — Reports
-  'nav.salesReports': 'Rapports de Ventes',
-  'nav.financialReports': 'Rapports Financiers',
-  'nav.hrReports': 'Rapports RH',
 
   // Nav Items — Pages
   'nav.authentication': 'Authentification',
@@ -95,110 +42,6 @@ export default {
   'nav.appearance': 'Apparence',
   'nav.notifications': 'Notifications',
   'nav.display': 'Affichage',
-
-  // Nav Bottom
-  'nav.helpSupport': 'Aide et Support',
-  'nav.feedback': 'Commentaires',
-
-  // Dashboard
-  'dashboard.title': 'Tableau de Bord',
-  'dashboard.description': 'Aperçu des métriques clés et performances',
-  'dashboard.totalRevenue': 'Revenus Totaux',
-  'dashboard.newCustomers': 'Nouveaux Clients',
-  'dashboard.activeAccounts': 'Comptes Actifs',
-  'dashboard.growthRate': 'Taux de Croissance',
-  'dashboard.trendingUp': 'Tendance à la hausse ce mois',
-  'dashboard.down20': 'En baisse de 20% cette période',
-  'dashboard.acquisitionAttention': 'L\'acquisition nécessite attention',
-  'dashboard.strongRetention': 'Forte rétention des utilisateurs',
-  'dashboard.engagementExceed': 'L\'engagement dépasse les objectifs',
-  'dashboard.steadyPerformance': 'Augmentation constante des performances',
-  'dashboard.meetsGrowth': 'Conforme aux projections de croissance',
-  'dashboard.totalVisitors': 'Visiteurs Totaux',
-  'dashboard.totalLast3Months': 'Total des 3 derniers mois',
-  'dashboard.last3Months': '3 derniers mois',
-  'dashboard.last30Days': '30 derniers jours',
-  'dashboard.last7Days': '7 derniers jours',
-  'dashboard.visitorsLast6Months': 'Visiteurs des 6 derniers mois',
-  'dashboard.download': 'Télécharger',
-
-  // Tasks
-  'tasks.title': 'Tâches',
-  'tasks.description': 'Voici la liste de vos tâches pour ce mois !',
-  'tasks.allTasks': 'Toutes les Tâches',
-  'tasks.task': 'tâche',
-  'tasks.tasks': 'tâches',
-  'tasks.projects': 'Projets',
-  'tasks.all': 'Toutes',
-  'tasks.allProjects': 'Tous les Projets',
-  'tasks.filterPlaceholder': 'Filtrer les tâches...',
-  'tasks.loadingMore': 'Chargement…',
-  'tasks.noResults': 'Aucun résultat.',
-  'tasks.col.sno': '#',
-  'tasks.col.title': 'Titre',
-  'tasks.col.status': 'Statut',
-  'tasks.col.assignees': 'Assignés',
-  'tasks.col.priority': 'Priorité',
-  'tasks.col.createdAt': 'Créé',
-  'tasks.col.dueDate': 'Échéance',
-  'tasks.label.bug': 'Bug',
-  'tasks.label.feature': 'Fonctionnalité',
-  'tasks.label.documentation': 'Documentation',
-  'tasks.status.backlog': 'En attente',
-  'tasks.status.todo': 'À faire',
-  'tasks.status.inProgress': 'En cours',
-  'tasks.status.done': 'Terminé',
-  'tasks.status.canceled': 'Annulé',
-  'tasks.priority.low': 'Basse',
-  'tasks.priority.medium': 'Moyenne',
-  'tasks.priority.high': 'Haute',
-  'tasks.addTask': 'Ajouter une tâche',
-  'tasks.reset': 'Réinitialiser',
-  'tasks.clearFilters': 'Effacer les filtres',
-  'tasks.view': 'Afficher',
-  'tasks.toggleColumns': 'Basculer les colonnes',
-  'tasks.sortAsc': 'Asc',
-  'tasks.sortDesc': 'Desc',
-  'tasks.hide': 'Masquer',
-  'tasks.nSelected': 'sélectionné(s)',
-  'tasks.actions.edit': 'Modifier',
-  'tasks.actions.copy': 'Faire une copie',
-  'tasks.actions.favorite': 'Favori',
-  'tasks.actions.labels': 'Étiquettes',
-  'tasks.actions.delete': 'Supprimer',
-  'tasks.actions.openMenu': 'Ouvrir le menu',
-  'tasks.addTask.title': 'Nouvelle Tâche',
-  'tasks.addTask.desc': 'Remplissez les détails pour créer une nouvelle tâche.',
-  'tasks.addTask.projectLabel': 'Projet',
-  'tasks.addTask.selectProject': 'Sélectionner le projet',
-  'tasks.addTask.phaseLabel': 'Phase',
-  'tasks.addTask.selectPhase': 'Sélectionner la phase',
-  'tasks.addTask.categoryLabel': 'Catégorie',
-  'tasks.addTask.selectCategory': 'Sélectionner la catégorie',
-  'tasks.addTask.titleLabel': 'Tâche',
-  'tasks.addTask.titlePlaceholder': 'Entrez le titre de la tâche...',
-  'tasks.addTask.assigneesLabel': 'Assignés',
-  'tasks.addTask.selectAssignees': 'Sélectionner les assignés',
-  'tasks.addTask.statusLabel': 'Statut',
-  'tasks.addTask.priorityLabel': 'Priorité',
-  'tasks.addTask.selectStatus': 'Sélectionner le statut',
-  'tasks.addTask.selectPriority': 'Sélectionner la priorité',
-  'tasks.addTask.dueDateLabel': 'Échéance',
-  'tasks.addTask.create': 'Créer la Tâche',
-  'tasks.due.overdue': 'En retard',
-  'tasks.due.dueToday': 'Échéance aujourd\'hui',
-  'tasks.due.dueSoon': 'Échéance proche',
-  'tasks.due.left': 'restants',
-  'tasks.due.ago': 'passés',
-  'tasks.due.today': 'Aujourd\'hui',
-
-  // Email
-  'email.title': 'E-mail',
-  'email.description': 'Boîte de réception et communications',
-  'email.inbox': 'Boîte de Réception',
-  'email.allMail': 'Tous les e-mails',
-  'email.unread': 'Non lus',
-  'email.search': 'Rechercher',
 
   // Kanban
   'kanban.title': 'Tableau Kanban',

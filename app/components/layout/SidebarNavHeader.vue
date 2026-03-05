@@ -24,7 +24,7 @@ const activeTeam = ref(props.teams[0])
             class="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
           >
             <div class="aspect-square size-8 flex items-center justify-center rounded-lg overflow-hidden bg-sidebar-primary">
-              <img src="/logo-192.png" alt="AI Visual Pro" class="size-8 object-cover" />
+              <img src="/logo-192.png" alt="Adeel Workspace" class="size-8 object-cover" />
             </div>
             <div class="grid flex-1 text-left text-sm leading-tight">
               <span class="truncate font-semibold">

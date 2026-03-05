@@ -42,27 +42,26 @@ useHead({
   },
 })
 
-const title = 'AI Visual Pro — Enterprise ERP & CRM Platform'
-const description = 'A comprehensive enterprise resource planning and CRM platform by AI Visual Pro. Built with Nuxt 4, Shadcn Vue, and TailwindCSS — featuring 12+ modules, full CRUD, dark mode, and multi-theme support.'
+const title = 'Adeel Workspace'
+const description = 'Adeel Workspace — A comprehensive enterprise resource planning and CRM platform.'
 
 useSeoMeta({
   title,
   description,
   ogTitle: title,
   ogDescription: description,
-  ogUrl: 'https://aivisualpro.com',
-  ogImage: 'https://aivisualpro.com/social-card.png',
+  ogUrl: 'https://adeelworkspace.com',
+  ogImage: 'https://adeelworkspace.com/social-card.png',
   twitterTitle: title,
   twitterDescription: description,
-  twitterImage: 'https://aivisualpro.com/social-card.png',
+  twitterImage: 'https://adeelworkspace.com/social-card.png',
   twitterCard: 'summary_large_image',
 })
 
 const router = useRouter()
 
 defineShortcuts({
-  'G-H': () => router.push('/'),
-  'G-E': () => router.push('/email'),
+  'G-H': () => router.push('/projects/list'),
 })
 </script>
 
