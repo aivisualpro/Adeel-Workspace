@@ -2,10 +2,11 @@ import tailwindcss from '@tailwindcss/vite'
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: false },
+  ssr: false,
   spaLoadingTemplate: false,
 
   runtimeConfig: {
-    mongodbUri: '',
+    mongodbUri: 'mongodb://localhost:27017',
   },
 
   watch: ['~/app.config.ts'],

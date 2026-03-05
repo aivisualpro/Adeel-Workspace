@@ -8,7 +8,7 @@ setHeader({
   description: 'Create databases, collections & import CSV data into MongoDB',
 })
 
-// ─── State ───
+// ─── State ───────────────────────────────────────────────────────────────────
 const database = ref('')
 const collection = ref('')
 const csvFile = ref<File | null>(null)
@@ -19,11 +19,142 @@ const csvRowCount = ref(0)
 const batchSize = ref(500)
 const dragActive = ref(false)
 
-// ─── Check State ───
+// ─── Database Combobox ───────────────────────────────────────────────────────
+const availableDatabases = ref<string[]>([])
+const loadingDatabases = ref(false)
+const dbDropdownOpen = ref(false)
+const dbInputRef = ref<HTMLInputElement | null>(null)
+const dbDropdownStyle = ref({ top: '0px', left: '0px', width: '0px' })
+
+async function loadDatabases() {
+  if (availableDatabases.value.length > 0) return
+  loadingDatabases.value = true
+  try {
+    const res: any = await $fetch('/api/db/databases')
+    availableDatabases.value = res.databases || []
+  }
+  catch {
+    availableDatabases.value = []
+  }
+  loadingDatabases.value = false
+}
+
+function onDbFocus() {
+  // Calculate fixed position from input element
+  if (dbInputRef.value) {
+    const rect = dbInputRef.value.getBoundingClientRect()
+    dbDropdownStyle.value = {
+      top: `${rect.bottom + 4}px`,
+      left: `${rect.left}px`,
+      width: `${rect.width}px`,
+    }
+  }
+  dbDropdownOpen.value = true
+  loadDatabases()
+}
+
+function onDbBlur() {
+  setTimeout(() => { dbDropdownOpen.value = false }, 180)
+}
+
+function selectDatabase(name: string) {
+  database.value = name
+  dbDropdownOpen.value = false
+  availableCollections.value = []
+}
+
+const filteredDatabases = computed(() => {
+  const q = database.value.trim().toLowerCase()
+  if (!q) return availableDatabases.value
+  return availableDatabases.value.filter(d => d.toLowerCase().includes(q))
+})
+
+const isNewDatabase = computed(() => {
+  const v = database.value.trim()
+  return v !== '' && !availableDatabases.value.includes(v)
+})
+
+// ─── Reference System ─────────────────────────────────────────────────────────
+interface ReferenceConfig {
+  id: string
+  localField: string        // CSV field to resolve (e.g. "Category")
+  collection: string        // reference collection (e.g. "hardwoodDatabase_Categories")
+  refField: string          // field in ref collection to match on (e.g. "Category")
+  storeField: string        // output field name to store ObjectId as (e.g. "category_id")
+  // UI state
+  loadingFields: boolean
+  availableFields: string[]
+  error: string
+}
+
+const references = ref<ReferenceConfig[]>([])
+const availableCollections = ref<string[]>([])
+const loadingCollections = ref(false)
+
+function addReference() {
+  references.value.push({
+    id: nanoid(6),
+    localField: '',
+    collection: '',
+    refField: '',
+    storeField: '',
+    loadingFields: false,
+    availableFields: [],
+    error: '',
+  })
+}
+
+function removeReference(id: string) {
+  references.value = references.value.filter(r => r.id !== id)
+}
+
+async function loadCollections() {
+  if (!database.value.trim() || availableCollections.value.length > 0) return
+  loadingCollections.value = true
+  try {
+    const res: any = await $fetch(`/api/db/collections?database=${encodeURIComponent(database.value.trim())}`)
+    availableCollections.value = res.collections || []
+  }
+  catch {
+    availableCollections.value = []
+  }
+  loadingCollections.value = false
+}
+
+async function onRefCollectionChange(ref: ReferenceConfig) {
+  if (!ref.collection) {
+    ref.availableFields = []
+    ref.refField = ''
+    return
+  }
+  ref.loadingFields = true
+  ref.error = ''
+  ref.availableFields = []
+  ref.refField = ''
+  try {
+    const res: any = await $fetch(
+      `/api/db/fields?database=${encodeURIComponent(database.value.trim())}&collection=${encodeURIComponent(ref.collection)}`,
+    )
+    ref.availableFields = res.fields || []
+  }
+  catch (e: any) {
+    ref.error = 'Could not load fields'
+  }
+  ref.loadingFields = false
+}
+
+// Auto-set storeField when localField changes — default to same name (replaces text value with ObjectId in-place)
+function onLocalFieldChange(ref: ReferenceConfig) {
+  if (ref.localField && !ref.storeField) {
+    ref.storeField = ref.localField
+  }
+}
+
+// ─── Check State ──────────────────────────────────────────────────────────────
 const checkResult = ref<{ dbExists: boolean, collectionExists: boolean, message: string } | null>(null)
 const checking = ref(false)
 
-// ─── Import State ───
+// ─── Import State ─────────────────────────────────────────────────────────────
 type ImportStatus = 'idle' | 'parsing' | 'importing' | 'done' | 'error'
 const importStatus = ref<string>('idle') as Ref<ImportStatus>
 const sessionId = ref('')
@@ -42,10 +173,29 @@ const progress = ref({
 })
 let pollInterval: ReturnType<typeof setInterval> | null = null
 
+// ─── Computed ─────────────────────────────────────────────────────────────────
+const fullCollectionName = computed(() => {
+  const db = database.value.trim()
+  const col = collection.value.trim()
+  if (!db || !col) return col
+  return col.startsWith(`${db}_`) ? col : `${db}_${col}`
+})
+
 const isFormValid = computed(() => database.value.trim() && collection.value.trim() && csvFile.value)
 const isImporting = computed(() => importStatus.value === 'importing' || importStatus.value === 'parsing')
 
-// ─── CSV File Handling ───
+const validReferences = computed(() =>
+  references.value.filter(r => r.localField && r.collection && r.refField && r.storeField),
+)
+
+const referencedFields = computed(() => new Set(references.value.map(r => r.localField)))
+
+// Watch database change → reset collections cache
+watch(() => database.value, () => {
+  availableCollections.value = []
+})
+
+// ─── CSV File Handling ────────────────────────────────────────────────────────
 function handleFileInput(e: Event) {
   const input = e.target as HTMLInputElement
   if (input.files?.length) processFile(input.files[0]!)
@@ -65,19 +215,16 @@ function processFile(file: File) {
   csvFile.value = file
   csvFileName.value = file.name
 
-  // Read preview
   const reader = new FileReader()
   reader.onload = (ev) => {
     const text = ev.target?.result as string
     const lines = text.split(/\r?\n/).filter(l => l.trim())
     if (lines.length === 0) return
 
-    // Parse headers
     const headers = parseCSVRow(lines[0]!)
     csvPreviewHeaders.value = headers
     csvRowCount.value = lines.length - 1
 
-    // Preview first 5 rows
     const preview: Record<string, string>[] = []
     for (let i = 1; i <= Math.min(5, lines.length - 1); i++) {
       const vals = parseCSVRow(lines[i]!)
@@ -87,10 +234,12 @@ function processFile(file: File) {
     }
     csvPreviewRows.value = preview
 
-    // Auto-infer collection name if empty
     if (!collection.value) {
-      collection.value = file.name.replace('.csv', '').replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase()
+      collection.value = file.name.replace('.csv', '').replace(/[^a-zA-Z0-9_]/g, '_')
     }
+
+    // Reset references when new file loaded
+    references.value = []
   }
   reader.readAsText(file)
 }
@@ -119,18 +268,21 @@ function removeFile() {
   csvPreviewRows.value = []
   csvRowCount.value = 0
   checkResult.value = null
+  references.value = []
 }
 
-// ─── Check DB/Collection ───
+// ─── Check DB ─────────────────────────────────────────────────────────────────
 async function checkDatabase() {
   checking.value = true
   checkResult.value = null
   try {
     const res = await $fetch('/api/db/check', {
       method: 'POST',
-      body: { database: database.value.trim(), collection: collection.value.trim() },
+      body: { database: database.value.trim(), collection: fullCollectionName.value },
     })
     checkResult.value = res as any
+    // Load collections for ref picker
+    await loadCollections()
   }
   catch (err: any) {
     checkResult.value = { dbExists: false, collectionExists: false, message: err.data?.message || 'Connection failed' }
@@ -138,7 +290,7 @@ async function checkDatabase() {
   checking.value = false
 }
 
-// ─── Import ───
+// ─── Import ───────────────────────────────────────────────────────────────────
 async function startImport() {
   if (!isFormValid.value || isImporting.value) return
 
@@ -148,10 +300,16 @@ async function startImport() {
 
   const formData = new FormData()
   formData.append('database', database.value.trim())
-  formData.append('collection', collection.value.trim())
+  formData.append('collection', fullCollectionName.value)
   formData.append('sessionId', sessionId.value)
   formData.append('batchSize', String(batchSize.value))
   formData.append('file', csvFile.value!)
+  formData.append('references', JSON.stringify(validReferences.value.map(r => ({
+    localField: r.localField,
+    collection: r.collection,
+    refField: r.refField,
+    storeField: r.storeField,
+  }))))
 
   try {
     const res: any = await $fetch('/api/db/import', {
@@ -172,21 +330,17 @@ async function startImport() {
 
 function startProgressPolling() {
   if (pollInterval) clearInterval(pollInterval)
-
   pollInterval = setInterval(async () => {
     try {
       const res: any = await $fetch(`/api/db/progress?sessionId=${sessionId.value}`)
       progress.value = res
       importStatus.value = res.status
-
       if (res.status === 'done' || res.status === 'error') {
         if (pollInterval) clearInterval(pollInterval)
         pollInterval = null
       }
     }
-    catch {
-      // silent
-    }
+    catch { /* silent */ }
   }, 300)
 }
 
@@ -197,12 +351,12 @@ function resetAll() {
   importStatus.value = 'idle'
   progress.value = { total: 0, imported: 0, percentage: 0, batchesDone: 0, totalBatches: 0, message: '', fields: [], speed: 0, eta: 0, remainingRecords: 0, elapsed: 0 }
   checkResult.value = null
+  references.value = []
+  availableCollections.value = []
   if (pollInterval) { clearInterval(pollInterval); pollInterval = null }
 }
 
-onUnmounted(() => {
-  if (pollInterval) clearInterval(pollInterval)
-})
+onUnmounted(() => { if (pollInterval) clearInterval(pollInterval) })
 
 const formatNumber = (n: number) => n.toLocaleString()
 const formatBytes = (bytes: number) => {
@@ -220,31 +374,96 @@ const formatDuration = (ms: number) => {
 
 <template>
   <div class="flex flex-col gap-6 max-w-5xl mx-auto pb-12">
-    <!-- ═══════════════ STEP 1: Database & Collection ═══════════════ -->
+
+    <!-- ═══ STEP 1: Database & Collection ════════════════════════════════════ -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <Card class="relative overflow-hidden border-border/50 bg-card/80 backdrop-blur-sm">
-        <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-primary/80 via-primary to-primary/40" />
+      <!-- Database Combobox -->
+      <Card class="relative border-border/50 bg-card/80 backdrop-blur-sm">
+        <div class="absolute top-0 left-0 w-full h-0.5 rounded-t-xl bg-gradient-to-r from-primary/80 via-primary to-primary/40" />
         <CardHeader class="pb-3">
           <CardTitle class="flex items-center gap-2 text-sm font-semibold">
             <div class="flex items-center justify-center size-7 rounded-lg bg-primary/10 text-primary">
               <Icon name="i-lucide-database" class="size-3.5" />
             </div>
             Database Name
+            <Badge v-if="isNewDatabase" variant="outline" class="ml-auto text-[9px] border-primary/40 text-primary bg-primary/5">+ New</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Input
-            v-model="database"
-            placeholder="e.g. my_project_db"
-            :disabled="isImporting"
-            class="font-mono text-sm"
-          />
+          <!-- Combobox container -->
+          <div class="relative">
+            <div class="relative">
+              <input
+                ref="dbInputRef"
+                v-model="database"
+                placeholder="Select or type a database name…"
+                :disabled="isImporting"
+                class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 pr-8 py-1 text-sm font-mono shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                autocomplete="off"
+                @focus="onDbFocus"
+                @blur="onDbBlur"
+              >
+              <div class="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                <Icon v-if="loadingDatabases" name="i-lucide-loader-2" class="size-3.5 animate-spin text-muted-foreground" />
+                <Icon v-else name="i-lucide-chevrons-up-down" class="size-3.5 text-muted-foreground" />
+              </div>
+            </div>
+
+            <!-- Dropdown — teleported to body to escape stacking contexts -->
+            <Teleport to="body">
+              <Transition
+                enter-active-class="transition-all duration-150 ease-out"
+                enter-from-class="opacity-0 -translate-y-1 scale-[0.98]"
+                enter-to-class="opacity-100 translate-y-0 scale-100"
+                leave-active-class="transition-all duration-100 ease-in"
+                leave-from-class="opacity-100"
+                leave-to-class="opacity-0 scale-[0.98]"
+              >
+                <div
+                  v-if="dbDropdownOpen && (filteredDatabases.length > 0 || isNewDatabase)"
+                  class="fixed z-[9999] rounded-lg border border-border/60 bg-popover shadow-xl overflow-hidden"
+                  :style="dbDropdownStyle"
+                >
+                  <!-- Existing DBs -->
+                  <div v-if="filteredDatabases.length > 0" class="p-1">
+                    <p class="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest px-2 py-1">Existing Databases</p>
+                    <button
+                      v-for="db in filteredDatabases"
+                      :key="db"
+                      type="button"
+                      class="w-full flex items-center gap-2 px-2 py-2 rounded-md text-sm font-mono hover:bg-muted/60 transition-colors text-left"
+                      :class="database === db ? 'bg-primary/10 text-primary' : ''"
+                      @mousedown.prevent="selectDatabase(db)"
+                    >
+                      <Icon name="i-lucide-database" class="size-3.5 shrink-0" :class="database === db ? 'text-primary' : 'text-muted-foreground'" />
+                      {{ db }}
+                      <Icon v-if="database === db" name="i-lucide-check" class="size-3.5 ml-auto text-primary" />
+                    </button>
+                  </div>
+                  <!-- Create new option -->
+                  <div v-if="isNewDatabase" class="border-t border-border/40 p-1">
+                    <button
+                      type="button"
+                      class="w-full flex items-center gap-2 px-2 py-2 rounded-md text-sm font-mono hover:bg-primary/10 transition-colors text-left text-primary"
+                      @mousedown.prevent="selectDatabase(database.trim())"
+                    >
+                      <Icon name="i-lucide-plus-circle" class="size-3.5 shrink-0" />
+                      Create "{{ database.trim() }}"
+                    </button>
+                  </div>
+                </div>
+              </Transition>
+            </Teleport>
+          </div>
+
           <p class="text-[11px] text-muted-foreground mt-2">
-            If the database doesn't exist, it will be created automatically.
+            <span v-if="isNewDatabase" class="text-primary">New database will be created on import.</span>
+            <span v-else>Select an existing database or type a new name.</span>
           </p>
         </CardContent>
       </Card>
 
+      <!-- Collection -->
       <Card class="relative overflow-hidden border-border/50 bg-card/80 backdrop-blur-sm">
         <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-emerald-500/80 via-emerald-500 to-emerald-500/40" />
         <CardHeader class="pb-3">
@@ -256,20 +475,18 @@ const formatDuration = (ms: number) => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <Input
-            v-model="collection"
-            placeholder="e.g. customers"
-            :disabled="isImporting"
-            class="font-mono text-sm"
-          />
-          <p class="text-[11px] text-muted-foreground mt-2">
-            Auto-filled from CSV filename. Will be created if it doesn't exist.
-          </p>
+          <Input v-model="collection" placeholder="e.g. Categories" :disabled="isImporting" class="font-mono text-sm" />
+          <div class="mt-2 flex items-center gap-1.5">
+            <Icon name="i-lucide-arrow-right" class="size-3 text-muted-foreground shrink-0" />
+            <span class="text-[11px] font-mono text-primary truncate">
+              {{ fullCollectionName || 'databaseName_collectionName' }}
+            </span>
+          </div>
         </CardContent>
       </Card>
     </div>
 
-    <!-- ═══════════════ STEP 2: CSV Upload ═══════════════ -->
+    <!-- ═══ STEP 2: CSV Upload ════════════════════════════════════════════════ -->
     <Card class="relative overflow-hidden border-border/50 bg-card/80 backdrop-blur-sm">
       <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-violet-500/80 via-violet-500 to-violet-500/40" />
       <CardHeader class="pb-3">
@@ -301,9 +518,7 @@ const formatDuration = (ms: number) => {
         <div
           v-if="!csvFile"
           class="relative border-2 border-dashed rounded-xl p-10 text-center transition-all duration-300 cursor-pointer group"
-          :class="dragActive
-            ? 'border-primary bg-primary/5 scale-[1.01]'
-            : 'border-border/60 hover:border-primary/50 hover:bg-muted/30'"
+          :class="dragActive ? 'border-primary bg-primary/5 scale-[1.01]' : 'border-border/60 hover:border-primary/50 hover:bg-muted/30'"
           @dragover.prevent="dragActive = true"
           @dragleave="dragActive = false"
           @drop="handleDrop"
@@ -350,9 +565,13 @@ const formatDuration = (ms: number) => {
                     <th
                       v-for="h in csvPreviewHeaders"
                       :key="h"
-                      class="px-3 py-2 text-left font-medium text-muted-foreground whitespace-nowrap"
+                      class="px-3 py-2 text-left font-medium whitespace-nowrap transition-colors"
+                      :class="referencedFields.has(h) ? 'text-amber-500' : 'text-muted-foreground'"
                     >
-                      {{ h }}
+                      <div class="flex items-center gap-1">
+                        <Icon v-if="referencedFields.has(h)" name="i-lucide-link" class="size-2.5" />
+                        {{ h }}
+                      </div>
                     </th>
                   </tr>
                 </thead>
@@ -363,7 +582,7 @@ const formatDuration = (ms: number) => {
                       v-for="h in csvPreviewHeaders"
                       :key="h"
                       class="px-3 py-1.5 font-mono max-w-[200px] truncate"
-                      :class="row[h] ? '' : 'text-muted-foreground/40 italic'"
+                      :class="[row[h] ? '' : 'text-muted-foreground/40 italic', referencedFields.has(h) ? 'text-amber-500/80' : '']"
                     >
                       {{ row[h] || 'null' }}
                     </td>
@@ -373,7 +592,7 @@ const formatDuration = (ms: number) => {
             </div>
           </div>
 
-          <!-- Schema Preview -->
+          <!-- Schema Badges -->
           <div v-if="csvPreviewHeaders.length" class="mt-4">
             <p class="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-2">Detected Schema</p>
             <div class="flex flex-wrap gap-1.5">
@@ -381,9 +600,10 @@ const formatDuration = (ms: number) => {
                 v-for="h in csvPreviewHeaders"
                 :key="h"
                 variant="outline"
-                class="text-[10px] font-mono gap-1 px-2 py-0.5"
+                class="text-[10px] font-mono gap-1 px-2 py-0.5 transition-colors"
+                :class="referencedFields.has(h) ? 'border-amber-500/50 text-amber-500 bg-amber-500/5' : ''"
               >
-                <Icon name="i-lucide-type" class="size-2.5 text-primary" />
+                <Icon :name="referencedFields.has(h) ? 'i-lucide-link' : 'i-lucide-type'" class="size-2.5" :class="referencedFields.has(h) ? 'text-amber-500' : 'text-primary'" />
                 {{ h }}
               </Badge>
             </div>
@@ -392,12 +612,211 @@ const formatDuration = (ms: number) => {
       </CardContent>
     </Card>
 
-    <!-- ═══════════════ STEP 3: Import config + Actions ═══════════════ -->
+    <!-- ═══ STEP 3: References ════════════════════════════════════════════════ -->
+    <Transition
+      enter-active-class="transition-all duration-400 ease-out"
+      enter-from-class="opacity-0 -translate-y-2"
+      enter-to-class="opacity-100 translate-y-0"
+    >
+      <Card v-if="csvFile" class="relative overflow-hidden border-border/50 bg-card/80 backdrop-blur-sm">
+        <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-amber-500/80 via-orange-500 to-amber-500/40" />
+        <CardHeader class="pb-3">
+          <div class="flex items-center justify-between">
+            <CardTitle class="flex items-center gap-2 text-sm font-semibold">
+              <div class="flex items-center justify-center size-7 rounded-lg bg-amber-500/10 text-amber-500">
+                <Icon name="i-lucide-link-2" class="size-3.5" />
+              </div>
+              Field References
+              <Badge v-if="validReferences.length" variant="secondary" class="text-[10px] bg-amber-500/15 text-amber-500 border-amber-500/30 ml-1">
+                {{ validReferences.length }} active
+              </Badge>
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              class="h-7 text-[11px] gap-1.5 border-amber-500/40 text-amber-500 hover:bg-amber-500/10 hover:border-amber-500/60"
+              :disabled="isImporting || !database.trim()"
+              @click="addReference"
+            >
+              <Icon name="i-lucide-plus" class="size-3" />
+              Add Reference
+            </Button>
+          </div>
+          <p class="text-[11px] text-muted-foreground mt-1 ml-9">
+            Map CSV fields to ObjectIds from other collections. Selected fields will be replaced with the referenced document's <code class="bg-muted px-1 rounded text-[10px]">_id</code>.
+          </p>
+        </CardHeader>
+
+        <CardContent>
+          <!-- Empty State -->
+          <div v-if="references.length === 0" class="flex flex-col items-center justify-center py-8 rounded-xl border border-dashed border-border/40 bg-muted/10 gap-3">
+            <div class="size-12 rounded-2xl bg-amber-500/10 flex items-center justify-center">
+              <Icon name="i-lucide-git-merge" class="size-5 text-amber-500/60" />
+            </div>
+            <div class="text-center">
+              <p class="text-sm font-medium text-muted-foreground">No references configured</p>
+              <p class="text-[11px] text-muted-foreground/60 mt-0.5">Add references to resolve field values → ObjectIds</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              class="h-7 text-[11px] gap-1.5 mt-1"
+              :disabled="!database.trim()"
+              @click="addReference"
+            >
+              <Icon name="i-lucide-plus" class="size-3" />
+              Add First Reference
+            </Button>
+          </div>
+
+          <!-- Reference Cards -->
+          <TransitionGroup
+            tag="div"
+            class="flex flex-col gap-3"
+            enter-active-class="transition-all duration-300 ease-out"
+            enter-from-class="opacity-0 scale-[0.97] -translate-y-1"
+            enter-to-class="opacity-100 scale-100 translate-y-0"
+            leave-active-class="transition-all duration-200 ease-in absolute w-full"
+            leave-from-class="opacity-100"
+            leave-to-class="opacity-0 scale-[0.97]"
+          >
+            <div
+              v-for="(ref, idx) in references"
+              :key="ref.id"
+              class="relative rounded-xl border border-border/40 bg-muted/20 overflow-hidden"
+            >
+              <!-- Accent line -->
+              <div class="absolute left-0 top-0 bottom-0 w-0.5 bg-gradient-to-b from-amber-500/80 to-orange-500/40" />
+
+              <div class="p-4 pl-5">
+                <!-- Header row -->
+                <div class="flex items-center justify-between mb-4">
+                  <div class="flex items-center gap-2">
+                    <div class="size-5 rounded-md bg-amber-500/15 flex items-center justify-center">
+                      <span class="text-[10px] font-bold text-amber-500">{{ idx + 1 }}</span>
+                    </div>
+                    <span class="text-xs font-semibold text-foreground">Reference Link</span>
+                    <!-- Live preview pill -->
+                    <div v-if="ref.localField && ref.storeField" class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20">
+                      <span class="text-[10px] font-mono text-amber-400">{{ ref.localField }}</span>
+                      <Icon name="i-lucide-arrow-right" class="size-2.5 text-amber-500/60" />
+                      <span class="text-[10px] font-mono text-emerald-400">{{ ref.storeField }}</span>
+                      <span class="text-[10px] text-muted-foreground/60 ml-0.5">(ObjectId)</span>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    class="size-7 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    @click="removeReference(ref.id)"
+                  >
+                    <Icon name="i-lucide-trash-2" class="size-3.5" />
+                  </Button>
+                </div>
+
+                <!-- 4-column config grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                  <!-- 1. CSV Field to resolve -->
+                  <div class="space-y-1.5">
+                    <label class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                      <Icon name="i-lucide-file-spreadsheet" class="size-2.5 text-violet-400" />
+                      CSV Field
+                    </label>
+                    <select
+                      v-model="ref.localField"
+                      class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      @change="onLocalFieldChange(ref)"
+                    >
+                      <option value="">— select field —</option>
+                      <option v-for="h in csvPreviewHeaders" :key="h" :value="h">{{ h }}</option>
+                    </select>
+                    <p class="text-[10px] text-muted-foreground/60">Field from your CSV</p>
+                  </div>
+
+                  <!-- 2. Reference Collection -->
+                  <div class="space-y-1.5">
+                    <label class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                      <Icon name="i-lucide-database" class="size-2.5 text-primary" />
+                      Ref. Collection
+                    </label>
+                    <div class="relative">
+                      <select
+                        v-model="ref.collection"
+                        class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                        @focus="loadCollections"
+                        @change="onRefCollectionChange(ref)"
+                      >
+                        <option value="">— select collection —</option>
+                        <option v-for="c in availableCollections" :key="c" :value="c">{{ c }}</option>
+                      </select>
+                      <div v-if="loadingCollections" class="absolute right-8 top-1/2 -translate-y-1/2">
+                        <Icon name="i-lucide-loader-2" class="size-3 animate-spin text-muted-foreground" />
+                      </div>
+                    </div>
+                    <p class="text-[10px] text-muted-foreground/60">Lookup collection</p>
+                  </div>
+
+                  <!-- 3. Field in ref collection to match -->
+                  <div class="space-y-1.5">
+                    <label class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                      <Icon name="i-lucide-key-round" class="size-2.5 text-amber-400" />
+                      Match Field
+                    </label>
+                    <div class="relative">
+                      <select
+                        v-model="ref.refField"
+                        class="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                        :disabled="ref.loadingFields || !ref.collection"
+                      >
+                        <option value="">— select field —</option>
+                        <option v-for="f in ref.availableFields" :key="f" :value="f">{{ f }}</option>
+                      </select>
+                      <div v-if="ref.loadingFields" class="absolute right-8 top-1/2 -translate-y-1/2">
+                        <Icon name="i-lucide-loader-2" class="size-3 animate-spin text-muted-foreground" />
+                      </div>
+                    </div>
+                    <p class="text-[10px] text-muted-foreground/60">Field to compare against</p>
+                  </div>
+
+                  <!-- 4. Output field name -->
+                  <div class="space-y-1.5">
+                    <label class="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                      <Icon name="i-lucide-tag" class="size-2.5 text-emerald-400" />
+                      Store As
+                    </label>
+                    <Input
+                      v-model="ref.storeField"
+                      placeholder="e.g. Category"
+                      class="font-mono text-xs h-9"
+                    />
+                    <p class="text-[10px] text-muted-foreground/60">Field name in MongoDB (ObjectId)</p>
+                  </div>
+                </div>
+
+                <!-- Error -->
+                <p v-if="ref.error" class="text-[11px] text-destructive mt-2 flex items-center gap-1">
+                  <Icon name="i-lucide-alert-circle" class="size-3" />
+                  {{ ref.error }}
+                </p>
+
+                <!-- Validation warning -->
+                <div v-else-if="ref.localField && ref.collection && ref.availableFields.length && !ref.refField" class="mt-2 flex items-center gap-1.5 text-[11px] text-amber-500/80">
+                  <Icon name="i-lucide-triangle-alert" class="size-3" />
+                  Select a match field to complete this reference
+                </div>
+              </div>
+            </div>
+          </TransitionGroup>
+        </CardContent>
+      </Card>
+    </Transition>
+
+    <!-- ═══ STEP 4: Import Settings + Actions ════════════════════════════════ -->
     <Card class="relative overflow-hidden border-border/50 bg-card/80 backdrop-blur-sm">
-      <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-amber-500/80 via-amber-500 to-amber-500/40" />
+      <div class="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-sky-500/80 via-sky-500 to-sky-500/40" />
       <CardHeader class="pb-3">
         <CardTitle class="flex items-center gap-2 text-sm font-semibold">
-          <div class="flex items-center justify-center size-7 rounded-lg bg-amber-500/10 text-amber-500">
+          <div class="flex items-center justify-center size-7 rounded-lg bg-sky-500/10 text-sky-500">
             <Icon name="i-lucide-settings-2" class="size-3.5" />
           </div>
           Import Settings
@@ -422,7 +841,7 @@ const formatDuration = (ms: number) => {
           <div>
             <label class="text-xs font-medium text-muted-foreground mb-1.5 block">Target</label>
             <div class="h-9 flex items-center px-3 rounded-md bg-muted/40 border border-border/40 text-sm font-mono truncate">
-              {{ database || '—' }}<span class="text-muted-foreground mx-1">.</span>{{ collection || '—' }}
+              {{ database || '—' }}<span class="text-muted-foreground mx-1">.</span>{{ fullCollectionName || '—' }}
             </div>
           </div>
           <div>
@@ -432,8 +851,28 @@ const formatDuration = (ms: number) => {
             </div>
           </div>
         </div>
+
+        <!-- References summary -->
+        <div v-if="validReferences.length > 0" class="mt-4 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
+          <p class="text-[11px] font-semibold text-amber-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+            <Icon name="i-lucide-link-2" class="size-3" />
+            Reference Mappings ({{ validReferences.length }})
+          </p>
+          <div class="flex flex-col gap-1.5">
+            <div v-for="ref in validReferences" :key="ref.id" class="flex items-center gap-2 text-[11px] font-mono">
+              <span class="text-violet-400 bg-violet-500/10 px-1.5 py-0.5 rounded">{{ ref.localField }}</span>
+              <Icon name="i-lucide-arrow-right" class="size-3 text-muted-foreground" />
+              <span class="text-primary/70">{{ ref.collection }}</span>
+              <span class="text-muted-foreground">→ match</span>
+              <span class="text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded">{{ ref.refField }}</span>
+              <span class="text-muted-foreground">→ store as</span>
+              <span class="text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">{{ ref.storeField }}</span>
+              <span class="text-muted-foreground">(ObjectId)</span>
+            </div>
+          </div>
+        </div>
       </CardContent>
-      <CardFooter class="border-t border-border/30 pt-4 flex items-center gap-3">
+      <CardFooter class="border-t border-border/30 pt-4 flex items-center gap-3 flex-wrap">
         <Button
           variant="outline"
           size="sm"
@@ -456,7 +895,7 @@ const formatDuration = (ms: number) => {
           {{ isImporting ? 'Importing...' : 'Start Import' }}
         </Button>
 
-        <!-- Check Result Inline -->
+        <!-- Check Result -->
         <div v-if="checkResult" class="flex items-center gap-2 ml-2 text-xs">
           <Badge
             :variant="checkResult.dbExists ? 'default' : 'secondary'"
@@ -478,7 +917,7 @@ const formatDuration = (ms: number) => {
       </CardFooter>
     </Card>
 
-    <!-- ═══════════════ PROGRESS DASHBOARD ═══════════════ -->
+    <!-- ═══ PROGRESS ══════════════════════════════════════════════════════════ -->
     <Transition
       enter-active-class="transition-all duration-500 ease-out"
       enter-from-class="opacity-0 translate-y-4 scale-[0.98]"
@@ -505,72 +944,57 @@ const formatDuration = (ms: number) => {
               </div>
               Import Progress
             </CardTitle>
-            <div class="flex items-center gap-2">
-              <span
-                v-if="importStatus !== 'idle'"
-                class="text-2xl font-bold tabular-nums"
-                :class="importStatus === 'done' ? 'text-emerald-500' : importStatus === 'error' ? 'text-destructive' : 'text-primary'"
-              >
-                {{ progress.percentage }}%
-              </span>
-            </div>
+            <span
+              class="text-2xl font-bold tabular-nums"
+              :class="importStatus === 'done' ? 'text-emerald-500' : importStatus === 'error' ? 'text-destructive' : 'text-primary'"
+            >
+              {{ progress.percentage }}%
+            </span>
           </div>
         </CardHeader>
         <CardContent class="space-y-4">
-          <!-- Main Progress Bar -->
-          <div class="relative">
-            <div class="h-3 rounded-full bg-muted/60 overflow-hidden">
-              <div
-                class="h-full rounded-full transition-all duration-500 ease-out relative overflow-hidden"
-                :class="importStatus === 'done'
-                  ? 'bg-gradient-to-r from-emerald-500 to-emerald-400'
-                  : importStatus === 'error'
-                    ? 'bg-gradient-to-r from-destructive to-red-400'
-                    : 'bg-gradient-to-r from-primary to-blue-400'"
-                :style="{ width: `${progress.percentage}%` }"
-              >
-                <!-- Shimmer effect during import -->
-                <div
-                  v-if="isImporting"
-                  class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"
-                />
-              </div>
+          <!-- Bar -->
+          <div class="h-3 rounded-full bg-muted/60 overflow-hidden">
+            <div
+              class="h-full rounded-full transition-all duration-500 ease-out relative overflow-hidden"
+              :class="importStatus === 'done' ? 'bg-gradient-to-r from-emerald-500 to-emerald-400' : importStatus === 'error' ? 'bg-gradient-to-r from-destructive to-red-400' : 'bg-gradient-to-r from-primary to-blue-400'"
+              :style="{ width: `${progress.percentage}%` }"
+            >
+              <div v-if="isImporting" class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
             </div>
           </div>
 
-          <!-- Status Message -->
+          <!-- Message -->
           <p class="text-sm text-center" :class="importStatus === 'done' ? 'text-emerald-500 font-medium' : importStatus === 'error' ? 'text-destructive font-medium' : 'text-muted-foreground'">
             {{ progress.message }}
           </p>
 
-          <!-- Stats Grid -->
+          <!-- Stats -->
           <div v-if="progress.total > 0" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div class="rounded-lg bg-muted/30 border border-border/30 p-3 text-center">
               <p class="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Imported</p>
-              <p class="text-lg font-bold tabular-nums text-foreground">{{ formatNumber(progress.imported) }}</p>
+              <p class="text-lg font-bold tabular-nums">{{ formatNumber(progress.imported) }}</p>
               <p class="text-[10px] text-muted-foreground">of {{ formatNumber(progress.total) }}</p>
             </div>
             <div class="rounded-lg bg-muted/30 border border-border/30 p-3 text-center">
               <p class="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Remaining</p>
-              <p class="text-lg font-bold tabular-nums text-foreground">{{ formatNumber(progress.remainingRecords) }}</p>
+              <p class="text-lg font-bold tabular-nums">{{ formatNumber(progress.remainingRecords) }}</p>
               <p class="text-[10px] text-muted-foreground">records left</p>
             </div>
             <div class="rounded-lg bg-muted/30 border border-border/30 p-3 text-center">
               <p class="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Speed</p>
-              <p class="text-lg font-bold tabular-nums text-foreground">{{ formatNumber(progress.speed) }}</p>
+              <p class="text-lg font-bold tabular-nums">{{ formatNumber(progress.speed) }}</p>
               <p class="text-[10px] text-muted-foreground">records/sec</p>
             </div>
             <div class="rounded-lg bg-muted/30 border border-border/30 p-3 text-center">
               <p class="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1">Elapsed</p>
-              <p class="text-lg font-bold tabular-nums text-foreground">{{ formatDuration(progress.elapsed) }}</p>
-              <p class="text-[10px] text-muted-foreground">
-                {{ progress.eta > 0 ? `~${progress.eta}s left` : importStatus === 'done' ? 'Complete' : '...' }}
-              </p>
+              <p class="text-lg font-bold tabular-nums">{{ formatDuration(progress.elapsed) }}</p>
+              <p class="text-[10px] text-muted-foreground">{{ progress.eta > 0 ? `~${progress.eta}s left` : importStatus === 'done' ? 'Complete' : '...' }}</p>
             </div>
           </div>
 
-          <!-- Batch Progress -->
-          <div v-if="progress.totalBatches > 1 && importStatus !== 'idle'" class="space-y-1.5">
+          <!-- Batch dots -->
+          <div v-if="progress.totalBatches > 1" class="space-y-1.5">
             <div class="flex items-center justify-between text-[11px] text-muted-foreground">
               <span>Batches: {{ progress.batchesDone }} / {{ progress.totalBatches }}</span>
               <span>{{ batchSize.toLocaleString() }} records per batch</span>
@@ -580,17 +1004,12 @@ const formatDuration = (ms: number) => {
                 v-for="i in Math.min(progress.totalBatches, 50)"
                 :key="i"
                 class="h-1.5 flex-1 rounded-full transition-all duration-300"
-                :class="i <= progress.batchesDone
-                  ? (importStatus === 'done' ? 'bg-emerald-500' : 'bg-primary')
-                  : 'bg-muted/60'"
+                :class="i <= progress.batchesDone ? (importStatus === 'done' ? 'bg-emerald-500' : 'bg-primary') : 'bg-muted/60'"
               />
             </div>
-            <p v-if="progress.totalBatches > 50" class="text-[10px] text-muted-foreground text-center">
-              Showing {{ Math.min(progress.totalBatches, 50) }} of {{ progress.totalBatches }} batches
-            </p>
           </div>
 
-          <!-- Done / Error Actions -->
+          <!-- Actions -->
           <div v-if="importStatus === 'done' || importStatus === 'error'" class="flex justify-center pt-2">
             <Button variant="outline" size="sm" class="gap-1.5" @click="resetAll">
               <Icon name="i-lucide-rotate-ccw" class="size-3.5" />
@@ -611,4 +1030,6 @@ const formatDuration = (ms: number) => {
 .animate-shimmer {
   animation: shimmer 1.5s infinite;
 }
+
+
 </style>
