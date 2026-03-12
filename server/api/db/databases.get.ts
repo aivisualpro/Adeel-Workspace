@@ -1,7 +1,10 @@
 import { getMongoClient } from '../../utils/mongodb'
 
-export default defineEventHandler(async () => {
-    const client = await getMongoClient()
+export default defineEventHandler(async (event) => {
+    const query = getQuery(event)
+    const source = (query.source as string) || 'adeel'
+
+    const client = await getMongoClient(source)
     const adminDb = client.db('admin')
     const result = await adminDb.command({ listDatabases: 1, nameOnly: true })
 

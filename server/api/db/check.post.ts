@@ -2,14 +2,14 @@ import { getMongoClient } from '../../utils/mongodb'
 
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
-    const { database, collection } = body
+    const { database, collection, source } = body
 
     if (!database || !collection) {
         throw createError({ statusCode: 400, message: 'database and collection are required' })
     }
 
     try {
-        const client = await getMongoClient()
+        const client = await getMongoClient(source || 'adeel')
         const admin = client.db('admin')
 
         // List all databases

@@ -8,6 +8,51 @@ setHeader({
   description: 'Create databases, collections & import CSV data into MongoDB',
 })
 
+// ─── Connection Source ───────────────────────────────────────────────────────
+interface SourceOption {
+  key: string
+  label: string
+  description: string
+  icon: string
+  gradient: string
+  accentColor: string
+}
+
+const sourceOptions: SourceOption[] = [
+  {
+    key: 'adeel',
+    label: 'Adeel',
+    description: 'Primary database cluster',
+    icon: 'i-lucide-server',
+    gradient: 'from-blue-500 via-indigo-500 to-violet-500',
+    accentColor: 'blue',
+  },
+  {
+    key: 'streetsmart',
+    label: 'Street Smart',
+    description: 'Street Smart database cluster',
+    icon: 'i-lucide-map-pin',
+    gradient: 'from-emerald-500 via-teal-500 to-cyan-500',
+    accentColor: 'emerald',
+  },
+]
+
+const selectedSource = ref<string>('adeel')
+
+const activeSourceOption = computed(() =>
+  sourceOptions.find(s => s.key === selectedSource.value) || sourceOptions[0]!
+)
+
+// Reset dependent state when source changes
+watch(selectedSource, () => {
+  availableDatabases.value = []
+  availableCollections.value = []
+  database.value = ''
+  collection.value = ''
+  checkResult.value = null
+  references.value = []
+})
+
 // ─── State ───────────────────────────────────────────────────────────────────
 const database = ref('')
 const collection = ref('')
@@ -30,7 +75,7 @@ async function loadDatabases() {
   if (availableDatabases.value.length > 0) return
   loadingDatabases.value = true
   try {
-    const res: any = await $fetch('/api/db/databases')
+    const res: any = await $fetch('/api/db/databases', { params: { source: selectedSource.value } })
     availableDatabases.value = res.databases || []
   }
   catch {
@@ -112,7 +157,7 @@ async function loadCollections() {
   if (!database.value.trim() || availableCollections.value.length > 0) return
   loadingCollections.value = true
   try {
-    const res: any = await $fetch(`/api/db/collections?database=${encodeURIComponent(database.value.trim())}`)
+    const res: any = await $fetch(`/api/db/collections?database=${encodeURIComponent(database.value.trim())}&source=${encodeURIComponent(selectedSource.value)}`)
     availableCollections.value = res.collections || []
   }
   catch {
@@ -133,7 +178,7 @@ async function onRefCollectionChange(ref: ReferenceConfig) {
   ref.refField = ''
   try {
     const res: any = await $fetch(
-      `/api/db/fields?database=${encodeURIComponent(database.value.trim())}&collection=${encodeURIComponent(ref.collection)}`,
+      `/api/db/fields?database=${encodeURIComponent(database.value.trim())}&collection=${encodeURIComponent(ref.collection)}&source=${encodeURIComponent(selectedSource.value)}`,
     )
     ref.availableFields = res.fields || []
   }
@@ -278,7 +323,7 @@ async function checkDatabase() {
   try {
     const res = await $fetch('/api/db/check', {
       method: 'POST',
-      body: { database: database.value.trim(), collection: fullCollectionName.value },
+      body: { database: database.value.trim(), collection: fullCollectionName.value, source: selectedSource.value },
     })
     checkResult.value = res as any
     // Load collections for ref picker
@@ -304,6 +349,7 @@ async function startImport() {
   formData.append('sessionId', sessionId.value)
   formData.append('batchSize', String(batchSize.value))
   formData.append('file', csvFile.value!)
+  formData.append('source', selectedSource.value)
   formData.append('references', JSON.stringify(validReferences.value.map(r => ({
     localField: r.localField,
     collection: r.collection,
@@ -374,6 +420,155 @@ const formatDuration = (ms: number) => {
 
 <template>
   <div class="flex flex-col gap-6 max-w-5xl mx-auto pb-12">
+
+    <!-- ═══ CONNECTION SOURCE ═════════════════════════════════════════════════ -->
+    <Card class="relative overflow-hidden border-border/50 bg-card/80 backdrop-blur-sm">
+      <!-- Animated gradient top bar -->
+      <div
+        class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r transition-all duration-700 ease-out"
+        :class="activeSourceOption.accentColor === 'blue'
+          ? 'from-blue-500 via-indigo-500 to-violet-500'
+          : 'from-emerald-500 via-teal-500 to-cyan-500'"
+      />
+
+      <CardHeader class="pb-3">
+        <CardTitle class="flex items-center gap-2 text-sm font-semibold">
+          <div
+            class="flex items-center justify-center size-7 rounded-lg transition-colors duration-300"
+            :class="activeSourceOption.accentColor === 'blue'
+              ? 'bg-blue-500/10 text-blue-500'
+              : 'bg-emerald-500/10 text-emerald-500'"
+          >
+            <Icon name="i-lucide-plug-zap" class="size-3.5" />
+          </div>
+          Connection Source
+          <Badge
+            variant="outline"
+            class="ml-auto text-[10px] gap-1.5 font-medium transition-all duration-300"
+            :class="activeSourceOption.accentColor === 'blue'
+              ? 'border-blue-500/40 text-blue-500 bg-blue-500/5'
+              : 'border-emerald-500/40 text-emerald-500 bg-emerald-500/5'"
+          >
+            <span class="relative flex size-1.5">
+              <span
+                class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+                :class="activeSourceOption.accentColor === 'blue' ? 'bg-blue-400' : 'bg-emerald-400'"
+              />
+              <span
+                class="relative inline-flex rounded-full size-1.5"
+                :class="activeSourceOption.accentColor === 'blue' ? 'bg-blue-500' : 'bg-emerald-500'"
+              />
+            </span>
+            Connected
+          </Badge>
+        </CardTitle>
+      </CardHeader>
+
+      <CardContent>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            v-for="option in sourceOptions"
+            :key="option.key"
+            type="button"
+            :disabled="isImporting"
+            class="relative group rounded-xl border-2 p-4 text-left transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            :class="[
+              selectedSource === option.key
+                ? option.accentColor === 'blue'
+                  ? 'border-blue-500/60 bg-blue-500/5 shadow-lg shadow-blue-500/10'
+                  : 'border-emerald-500/60 bg-emerald-500/5 shadow-lg shadow-emerald-500/10'
+                : 'border-border/40 bg-muted/10 hover:border-border/80 hover:bg-muted/20',
+              isImporting ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+            ]"
+            @click="selectedSource = option.key"
+          >
+            <!-- Selection glow effect -->
+            <div
+              v-if="selectedSource === option.key"
+              class="absolute inset-0 rounded-xl opacity-10 bg-gradient-to-br transition-opacity duration-500"
+              :class="option.accentColor === 'blue'
+                ? 'from-blue-500 to-violet-500'
+                : 'from-emerald-500 to-cyan-500'"
+            />
+
+            <div class="relative flex items-start gap-3">
+              <!-- Icon -->
+              <div
+                class="flex items-center justify-center size-10 rounded-xl shrink-0 transition-all duration-300"
+                :class="[
+                  selectedSource === option.key
+                    ? option.accentColor === 'blue'
+                      ? 'bg-blue-500/15 text-blue-500 ring-1 ring-blue-500/30'
+                      : 'bg-emerald-500/15 text-emerald-500 ring-1 ring-emerald-500/30'
+                    : 'bg-muted/60 text-muted-foreground group-hover:bg-muted'
+                ]"
+              >
+                <Icon :name="option.icon" class="size-5" />
+              </div>
+
+              <!-- Text -->
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2">
+                  <p
+                    class="text-sm font-semibold transition-colors duration-300"
+                    :class="selectedSource === option.key
+                      ? option.accentColor === 'blue' ? 'text-blue-500' : 'text-emerald-500'
+                      : 'text-foreground'"
+                  >
+                    {{ option.label }}
+                  </p>
+                  <!-- Check mark -->
+                  <Transition
+                    enter-active-class="transition-all duration-200 ease-out"
+                    enter-from-class="opacity-0 scale-50"
+                    enter-to-class="opacity-100 scale-100"
+                    leave-active-class="transition-all duration-150 ease-in"
+                    leave-from-class="opacity-100 scale-100"
+                    leave-to-class="opacity-0 scale-50"
+                  >
+                    <div
+                      v-if="selectedSource === option.key"
+                      class="flex items-center justify-center size-5 rounded-full"
+                      :class="option.accentColor === 'blue'
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-emerald-500 text-white'"
+                    >
+                      <Icon name="i-lucide-check" class="size-3" />
+                    </div>
+                  </Transition>
+                </div>
+                <p class="text-[11px] text-muted-foreground mt-0.5">{{ option.description }}</p>
+              </div>
+            </div>
+
+            <!-- Radio indicator -->
+            <div
+              class="absolute top-3 right-3 size-4 rounded-full border-2 transition-all duration-300 flex items-center justify-center"
+              :class="selectedSource === option.key
+                ? option.accentColor === 'blue'
+                  ? 'border-blue-500'
+                  : 'border-emerald-500'
+                : 'border-muted-foreground/30'"
+            >
+              <Transition
+                enter-active-class="transition-all duration-200 ease-out"
+                enter-from-class="scale-0"
+                enter-to-class="scale-100"
+                leave-active-class="transition-all duration-150 ease-in"
+                leave-from-class="scale-100"
+                leave-to-class="scale-0"
+              >
+                <div
+                  v-if="selectedSource === option.key"
+                  class="size-2 rounded-full"
+                  :class="option.accentColor === 'blue' ? 'bg-blue-500' : 'bg-emerald-500'"
+                />
+              </Transition>
+            </div>
+          </button>
+        </div>
+      </CardContent>
+    </Card>
 
     <!-- ═══ STEP 1: Database & Collection ════════════════════════════════════ -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

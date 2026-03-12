@@ -1,22 +1,40 @@
 import { MongoClient } from 'mongodb'
 
-let _client: MongoClient | null = null
+type SourceKey = 'adeel' | 'streetsmart'
 
-export async function getMongoClient(): Promise<MongoClient> {
-    if (!_client) {
-        // Read directly from process.env — always reliable in Nitro server context
-        const uri = (globalThis as any).process?.env?.NUXT_MONGODB_URI || 'mongodb://localhost:27017'
-        console.log('[MongoDB] Connecting to:', uri.replace(/\/\/.*@/, '//<credentials>@'))
-        _client = new MongoClient(uri)
+const connectionMap: Record<SourceKey, { envKey: string, label: string }> = {
+    adeel: { envKey: 'NUXT_MONGODB_URI', label: 'Adeel' },
+    streetsmart: { envKey: 'NUXT_STREETSMART_MONGODB_URI', label: 'Street Smart' },
+}
+
+// Maintain separate client pools per source
+const _clients: Partial<Record<SourceKey, MongoClient>> = {}
+
+/**
+ * Get a MongoClient for the given source.
+ * - 'adeel'       → uses NUXT_MONGODB_URI
+ * - 'streetsmart'  → uses NUXT_STREETSMART_MONGODB_URI
+ *
+ * Defaults to 'adeel' when no source is provided for backwards compatibility.
+ */
+export async function getMongoClient(source?: string): Promise<MongoClient> {
+    const key = (source && source in connectionMap ? source : 'adeel') as SourceKey
+    const config = connectionMap[key]
+
+    if (!_clients[key]) {
+        const uri = (globalThis as any).process?.env?.[config.envKey] || 'mongodb://localhost:27017'
+        console.log(`[MongoDB:${config.label}] Connecting to:`, uri.replace(/\/\/.*@/, '//<credentials>@'))
+
+        const client = new MongoClient(uri)
         try {
-            await _client.connect()
-            console.log('[MongoDB] Connected successfully')
+            await client.connect()
+            console.log(`[MongoDB:${config.label}] Connected successfully`)
+            _clients[key] = client
         }
         catch (err) {
-            _client = null // Clear cache so next attempt retries
             throw err
         }
     }
 
-    return _client
+    return _clients[key]!
 }

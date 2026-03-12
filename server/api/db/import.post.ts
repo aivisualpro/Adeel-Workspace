@@ -94,6 +94,7 @@ export default defineEventHandler(async (event) => {
     let sessionId = ''
     let batchSize = 500
     let referencesJson = '[]'
+    let source = 'adeel'
 
     for (const field of formData) {
         if (field.name === 'database') database = field.data.toString('utf-8')
@@ -101,6 +102,7 @@ export default defineEventHandler(async (event) => {
         if (field.name === 'sessionId') sessionId = field.data.toString('utf-8')
         if (field.name === 'batchSize') batchSize = parseInt(field.data.toString('utf-8')) || 500
         if (field.name === 'references') referencesJson = field.data.toString('utf-8')
+        if (field.name === 'source') source = field.data.toString('utf-8')
         if (field.name === 'file' && field.filename) {
             csvContent = field.data.toString('utf-8')
         }
@@ -150,7 +152,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Start async import
-    importInBackground(database, collection, rows, batchSize, sessionId, progress, references)
+    importInBackground(database, collection, rows, batchSize, sessionId, progress, references, source)
 
     return { success: true, sessionId, total: rows.length, fields: headers }
 })
@@ -163,9 +165,10 @@ async function importInBackground(
     sessionId: string,
     progress: ImportProgress,
     references: Reference[],
+    source: string,
 ) {
     try {
-        const client = await getMongoClient()
+        const client = await getMongoClient(source)
         const db = client.db(database)
         const col = db.collection(collection)
 

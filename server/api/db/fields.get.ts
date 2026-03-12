@@ -4,12 +4,13 @@ export default defineEventHandler(async (event) => {
     const query = getQuery(event)
     const database = query.database as string
     const collection = query.collection as string
+    const source = (query.source as string) || 'adeel'
 
     if (!database || !collection) {
         throw createError({ statusCode: 400, message: 'database and collection are required' })
     }
 
-    const client = await getMongoClient()
+    const client = await getMongoClient(source)
     const db = client.db(database)
     const col = db.collection(collection)
 
