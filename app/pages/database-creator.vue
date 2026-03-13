@@ -453,10 +453,10 @@ const formatDuration = (ms: number) => {
   <div class="flex flex-col gap-6 max-w-5xl mx-auto pb-12">
 
     <!-- ═══ CONNECTION SOURCE ═════════════════════════════════════════════════ -->
-    <Card class="relative overflow-hidden border-border/50 bg-card/80 backdrop-blur-sm">
+    <Card class="relative border-border/50 bg-card/80 backdrop-blur-sm">
       <!-- Animated gradient top bar -->
       <div
-        class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r transition-all duration-700 ease-out"
+        class="absolute top-0 left-0 w-full h-1 rounded-t-xl bg-gradient-to-r transition-all duration-700 ease-out"
         :class="{
           'from-blue-500 via-indigo-500 to-violet-500': activeSourceOption.accentColor === 'blue',
           'from-emerald-500 via-teal-500 to-cyan-500': activeSourceOption.accentColor === 'emerald',
