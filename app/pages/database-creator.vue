@@ -53,9 +53,20 @@ const activeSourceOption = computed(() =>
 
 const sourceDropdownOpen = ref(false)
 const sourceDropdownRef = ref<HTMLDivElement | null>(null)
+const sourceBtnRef = ref<HTMLButtonElement | null>(null)
+const sourceDropdownStyle = ref({ top: '0px', left: '0px', width: '0px' })
 
 function toggleSourceDropdown() {
   if (isImporting.value) return
+  // Calculate fixed position from button element
+  if (sourceBtnRef.value) {
+    const rect = sourceBtnRef.value.getBoundingClientRect()
+    sourceDropdownStyle.value = {
+      top: `${rect.bottom + 8}px`,
+      left: `${rect.left}px`,
+      width: `${rect.width}px`,
+    }
+  }
   sourceDropdownOpen.value = !sourceDropdownOpen.value
 }
 
@@ -513,6 +524,7 @@ const formatDuration = (ms: number) => {
         <!-- Dropdown Selector -->
         <div ref="sourceDropdownRef" class="relative">
           <button
+            ref="sourceBtnRef"
             type="button"
             :disabled="isImporting"
             class="w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all duration-300 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -575,7 +587,8 @@ const formatDuration = (ms: number) => {
             </div>
           </button>
 
-          <!-- Dropdown panel -->
+          <!-- Dropdown panel — teleported to body to escape stacking contexts -->
+          <Teleport to="body">
           <Transition
             enter-active-class="transition-all duration-200 ease-out"
             enter-from-class="opacity-0 -translate-y-1 scale-[0.98]"
@@ -586,7 +599,8 @@ const formatDuration = (ms: number) => {
           >
             <div
               v-if="sourceDropdownOpen"
-              class="absolute z-50 mt-2 w-full rounded-xl border border-border/60 bg-popover/95 backdrop-blur-xl shadow-2xl overflow-hidden"
+              class="fixed z-[9999] rounded-xl border border-border/60 bg-popover/95 backdrop-blur-xl shadow-2xl overflow-hidden"
+              :style="sourceDropdownStyle"
             >
               <div class="p-1.5">
                 <p class="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest px-3 py-1.5">Available Sources</p>
@@ -666,6 +680,7 @@ const formatDuration = (ms: number) => {
               </div>
             </div>
           </Transition>
+          </Teleport>
         </div>
       </CardContent>
     </Card>
