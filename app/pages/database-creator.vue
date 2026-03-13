@@ -35,6 +35,14 @@ const sourceOptions: SourceOption[] = [
     gradient: 'from-emerald-500 via-teal-500 to-cyan-500',
     accentColor: 'emerald',
   },
+  {
+    key: 'culturalgourmet',
+    label: 'Cultural Gourmet',
+    description: 'Cultural Gourmet database cluster',
+    icon: 'i-lucide-chef-hat',
+    gradient: 'from-orange-500 via-amber-500 to-yellow-500',
+    accentColor: 'orange',
+  },
 ]
 
 const selectedSource = ref<string>('adeel')
@@ -42,6 +50,29 @@ const selectedSource = ref<string>('adeel')
 const activeSourceOption = computed(() =>
   sourceOptions.find(s => s.key === selectedSource.value) || sourceOptions[0]!
 )
+
+const sourceDropdownOpen = ref(false)
+const sourceDropdownRef = ref<HTMLDivElement | null>(null)
+
+function toggleSourceDropdown() {
+  if (isImporting.value) return
+  sourceDropdownOpen.value = !sourceDropdownOpen.value
+}
+
+function selectSource(key: string) {
+  selectedSource.value = key
+  sourceDropdownOpen.value = false
+}
+
+// Close dropdown on outside click
+function onSourceClickOutside(e: MouseEvent) {
+  if (sourceDropdownRef.value && !sourceDropdownRef.value.contains(e.target as Node)) {
+    sourceDropdownOpen.value = false
+  }
+}
+
+onMounted(() => document.addEventListener('click', onSourceClickOutside))
+onUnmounted(() => document.removeEventListener('click', onSourceClickOutside))
 
 // Reset dependent state when source changes
 watch(selectedSource, () => {
@@ -426,37 +457,51 @@ const formatDuration = (ms: number) => {
       <!-- Animated gradient top bar -->
       <div
         class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r transition-all duration-700 ease-out"
-        :class="activeSourceOption.accentColor === 'blue'
-          ? 'from-blue-500 via-indigo-500 to-violet-500'
-          : 'from-emerald-500 via-teal-500 to-cyan-500'"
+        :class="{
+          'from-blue-500 via-indigo-500 to-violet-500': activeSourceOption.accentColor === 'blue',
+          'from-emerald-500 via-teal-500 to-cyan-500': activeSourceOption.accentColor === 'emerald',
+          'from-orange-500 via-amber-500 to-yellow-500': activeSourceOption.accentColor === 'orange',
+        }"
       />
 
       <CardHeader class="pb-3">
         <CardTitle class="flex items-center gap-2 text-sm font-semibold">
           <div
             class="flex items-center justify-center size-7 rounded-lg transition-colors duration-300"
-            :class="activeSourceOption.accentColor === 'blue'
-              ? 'bg-blue-500/10 text-blue-500'
-              : 'bg-emerald-500/10 text-emerald-500'"
+            :class="{
+              'bg-blue-500/10 text-blue-500': activeSourceOption.accentColor === 'blue',
+              'bg-emerald-500/10 text-emerald-500': activeSourceOption.accentColor === 'emerald',
+              'bg-orange-500/10 text-orange-500': activeSourceOption.accentColor === 'orange',
+            }"
           >
             <Icon name="i-lucide-plug-zap" class="size-3.5" />
           </div>
-          Connection Source
+          Connection Sources
           <Badge
             variant="outline"
             class="ml-auto text-[10px] gap-1.5 font-medium transition-all duration-300"
-            :class="activeSourceOption.accentColor === 'blue'
-              ? 'border-blue-500/40 text-blue-500 bg-blue-500/5'
-              : 'border-emerald-500/40 text-emerald-500 bg-emerald-500/5'"
+            :class="{
+              'border-blue-500/40 text-blue-500 bg-blue-500/5': activeSourceOption.accentColor === 'blue',
+              'border-emerald-500/40 text-emerald-500 bg-emerald-500/5': activeSourceOption.accentColor === 'emerald',
+              'border-orange-500/40 text-orange-500 bg-orange-500/5': activeSourceOption.accentColor === 'orange',
+            }"
           >
             <span class="relative flex size-1.5">
               <span
                 class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
-                :class="activeSourceOption.accentColor === 'blue' ? 'bg-blue-400' : 'bg-emerald-400'"
+                :class="{
+                  'bg-blue-400': activeSourceOption.accentColor === 'blue',
+                  'bg-emerald-400': activeSourceOption.accentColor === 'emerald',
+                  'bg-orange-400': activeSourceOption.accentColor === 'orange',
+                }"
               />
               <span
                 class="relative inline-flex rounded-full size-1.5"
-                :class="activeSourceOption.accentColor === 'blue' ? 'bg-blue-500' : 'bg-emerald-500'"
+                :class="{
+                  'bg-blue-500': activeSourceOption.accentColor === 'blue',
+                  'bg-emerald-500': activeSourceOption.accentColor === 'emerald',
+                  'bg-orange-500': activeSourceOption.accentColor === 'orange',
+                }"
               />
             </span>
             Connected
@@ -465,59 +510,138 @@ const formatDuration = (ms: number) => {
       </CardHeader>
 
       <CardContent>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <!-- Dropdown Selector -->
+        <div ref="sourceDropdownRef" class="relative">
           <button
-            v-for="option in sourceOptions"
-            :key="option.key"
             type="button"
             :disabled="isImporting"
-            class="relative group rounded-xl border-2 p-4 text-left transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            class="w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all duration-300 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             :class="[
-              selectedSource === option.key
-                ? option.accentColor === 'blue'
-                  ? 'border-blue-500/60 bg-blue-500/5 shadow-lg shadow-blue-500/10'
-                  : 'border-emerald-500/60 bg-emerald-500/5 shadow-lg shadow-emerald-500/10'
-                : 'border-border/40 bg-muted/10 hover:border-border/80 hover:bg-muted/20',
-              isImporting ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+              sourceDropdownOpen
+                ? 'border-primary/60 bg-muted/30 shadow-lg'
+                : {
+                    'border-blue-500/40 bg-blue-500/5 hover:border-blue-500/60': activeSourceOption.accentColor === 'blue',
+                    'border-emerald-500/40 bg-emerald-500/5 hover:border-emerald-500/60': activeSourceOption.accentColor === 'emerald',
+                    'border-orange-500/40 bg-orange-500/5 hover:border-orange-500/60': activeSourceOption.accentColor === 'orange',
+                  },
+              isImporting ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
             ]"
-            @click="selectedSource = option.key"
+            @click="toggleSourceDropdown"
           >
-            <!-- Selection glow effect -->
+            <!-- Selected source icon -->
             <div
-              v-if="selectedSource === option.key"
-              class="absolute inset-0 rounded-xl opacity-10 bg-gradient-to-br transition-opacity duration-500"
-              :class="option.accentColor === 'blue'
-                ? 'from-blue-500 to-violet-500'
-                : 'from-emerald-500 to-cyan-500'"
-            />
+              class="flex items-center justify-center size-10 rounded-xl shrink-0 transition-all duration-300 ring-1"
+              :class="{
+                'bg-blue-500/15 text-blue-500 ring-blue-500/30': activeSourceOption.accentColor === 'blue',
+                'bg-emerald-500/15 text-emerald-500 ring-emerald-500/30': activeSourceOption.accentColor === 'emerald',
+                'bg-orange-500/15 text-orange-500 ring-orange-500/30': activeSourceOption.accentColor === 'orange',
+              }"
+            >
+              <Icon :name="activeSourceOption.icon" class="size-5" />
+            </div>
 
-            <div class="relative flex items-start gap-3">
-              <!-- Icon -->
-              <div
-                class="flex items-center justify-center size-10 rounded-xl shrink-0 transition-all duration-300"
-                :class="[
-                  selectedSource === option.key
-                    ? option.accentColor === 'blue'
-                      ? 'bg-blue-500/15 text-blue-500 ring-1 ring-blue-500/30'
-                      : 'bg-emerald-500/15 text-emerald-500 ring-1 ring-emerald-500/30'
-                    : 'bg-muted/60 text-muted-foreground group-hover:bg-muted'
-                ]"
+            <!-- Selected source text -->
+            <div class="flex-1 min-w-0">
+              <p
+                class="text-sm font-semibold transition-colors duration-300"
+                :class="{
+                  'text-blue-500': activeSourceOption.accentColor === 'blue',
+                  'text-emerald-500': activeSourceOption.accentColor === 'emerald',
+                  'text-orange-500': activeSourceOption.accentColor === 'orange',
+                }"
               >
-                <Icon :name="option.icon" class="size-5" />
-              </div>
+                {{ activeSourceOption.label }}
+              </p>
+              <p class="text-[11px] text-muted-foreground mt-0.5 truncate">{{ activeSourceOption.description }}</p>
+            </div>
 
-              <!-- Text -->
-              <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-2">
-                  <p
-                    class="text-sm font-semibold transition-colors duration-300"
-                    :class="selectedSource === option.key
-                      ? option.accentColor === 'blue' ? 'text-blue-500' : 'text-emerald-500'
-                      : 'text-foreground'"
+            <!-- Chevron -->
+            <div class="flex items-center gap-2">
+              <div
+                class="flex items-center justify-center size-5 rounded-full"
+                :class="{
+                  'bg-blue-500 text-white': activeSourceOption.accentColor === 'blue',
+                  'bg-emerald-500 text-white': activeSourceOption.accentColor === 'emerald',
+                  'bg-orange-500 text-white': activeSourceOption.accentColor === 'orange',
+                }"
+              >
+                <Icon name="i-lucide-check" class="size-3" />
+              </div>
+              <Icon
+                name="i-lucide-chevrons-up-down"
+                class="size-4 text-muted-foreground transition-transform duration-200"
+                :class="sourceDropdownOpen ? 'rotate-180' : ''"
+              />
+            </div>
+          </button>
+
+          <!-- Dropdown panel -->
+          <Transition
+            enter-active-class="transition-all duration-200 ease-out"
+            enter-from-class="opacity-0 -translate-y-1 scale-[0.98]"
+            enter-to-class="opacity-100 translate-y-0 scale-100"
+            leave-active-class="transition-all duration-150 ease-in"
+            leave-from-class="opacity-100"
+            leave-to-class="opacity-0 -translate-y-1 scale-[0.98]"
+          >
+            <div
+              v-if="sourceDropdownOpen"
+              class="absolute z-50 mt-2 w-full rounded-xl border border-border/60 bg-popover/95 backdrop-blur-xl shadow-2xl overflow-hidden"
+            >
+              <div class="p-1.5">
+                <p class="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest px-3 py-1.5">Available Sources</p>
+                <button
+                  v-for="option in sourceOptions"
+                  :key="option.key"
+                  type="button"
+                  class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 group"
+                  :class="[
+                    selectedSource === option.key
+                      ? {
+                          'bg-blue-500/10': option.accentColor === 'blue',
+                          'bg-emerald-500/10': option.accentColor === 'emerald',
+                          'bg-orange-500/10': option.accentColor === 'orange',
+                        }
+                      : 'hover:bg-muted/60',
+                  ]"
+                  @click="selectSource(option.key)"
+                >
+                  <!-- Source icon -->
+                  <div
+                    class="flex items-center justify-center size-9 rounded-lg shrink-0 transition-all duration-200"
+                    :class="[
+                      selectedSource === option.key
+                        ? {
+                            'bg-blue-500/15 text-blue-500 ring-1 ring-blue-500/30': option.accentColor === 'blue',
+                            'bg-emerald-500/15 text-emerald-500 ring-1 ring-emerald-500/30': option.accentColor === 'emerald',
+                            'bg-orange-500/15 text-orange-500 ring-1 ring-orange-500/30': option.accentColor === 'orange',
+                          }
+                        : 'bg-muted/60 text-muted-foreground group-hover:bg-muted',
+                    ]"
                   >
-                    {{ option.label }}
-                  </p>
-                  <!-- Check mark -->
+                    <Icon :name="option.icon" class="size-4" />
+                  </div>
+
+                  <!-- Text -->
+                  <div class="flex-1 min-w-0">
+                    <p
+                      class="text-sm font-semibold transition-colors"
+                      :class="[
+                        selectedSource === option.key
+                          ? {
+                              'text-blue-500': option.accentColor === 'blue',
+                              'text-emerald-500': option.accentColor === 'emerald',
+                              'text-orange-500': option.accentColor === 'orange',
+                            }
+                          : 'text-foreground',
+                      ]"
+                    >
+                      {{ option.label }}
+                    </p>
+                    <p class="text-[10px] text-muted-foreground truncate">{{ option.description }}</p>
+                  </div>
+
+                  <!-- Check icon -->
                   <Transition
                     enter-active-class="transition-all duration-200 ease-out"
                     enter-from-class="opacity-0 scale-50"
@@ -528,44 +652,20 @@ const formatDuration = (ms: number) => {
                   >
                     <div
                       v-if="selectedSource === option.key"
-                      class="flex items-center justify-center size-5 rounded-full"
-                      :class="option.accentColor === 'blue'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-emerald-500 text-white'"
+                      class="flex items-center justify-center size-5 rounded-full shrink-0"
+                      :class="{
+                        'bg-blue-500 text-white': option.accentColor === 'blue',
+                        'bg-emerald-500 text-white': option.accentColor === 'emerald',
+                        'bg-orange-500 text-white': option.accentColor === 'orange',
+                      }"
                     >
                       <Icon name="i-lucide-check" class="size-3" />
                     </div>
                   </Transition>
-                </div>
-                <p class="text-[11px] text-muted-foreground mt-0.5">{{ option.description }}</p>
+                </button>
               </div>
             </div>
-
-            <!-- Radio indicator -->
-            <div
-              class="absolute top-3 right-3 size-4 rounded-full border-2 transition-all duration-300 flex items-center justify-center"
-              :class="selectedSource === option.key
-                ? option.accentColor === 'blue'
-                  ? 'border-blue-500'
-                  : 'border-emerald-500'
-                : 'border-muted-foreground/30'"
-            >
-              <Transition
-                enter-active-class="transition-all duration-200 ease-out"
-                enter-from-class="scale-0"
-                enter-to-class="scale-100"
-                leave-active-class="transition-all duration-150 ease-in"
-                leave-from-class="scale-100"
-                leave-to-class="scale-0"
-              >
-                <div
-                  v-if="selectedSource === option.key"
-                  class="size-2 rounded-full"
-                  :class="option.accentColor === 'blue' ? 'bg-blue-500' : 'bg-emerald-500'"
-                />
-              </Transition>
-            </div>
-          </button>
+          </Transition>
         </div>
       </CardContent>
     </Card>

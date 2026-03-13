@@ -1,10 +1,11 @@
 import { MongoClient } from 'mongodb'
 
-type SourceKey = 'adeel' | 'streetsmart'
+type SourceKey = 'adeel' | 'streetsmart' | 'culturalgourmet'
 
 const connectionMap: Record<SourceKey, { envKey: string, label: string }> = {
     adeel: { envKey: 'NUXT_MONGODB_URI', label: 'Adeel' },
     streetsmart: { envKey: 'NUXT_STREETSMART_MONGODB_URI', label: 'Street Smart' },
+    culturalgourmet: { envKey: 'NUXT_CULTURALGOURMET_MONGODB_URI', label: 'Cultural Gourmet' },
 }
 
 // Maintain separate client pools per source
