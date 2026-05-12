@@ -1,9 +1,6 @@
 export default {
   // Navigation Headings
   'nav.apps': 'التطبيقات',
-  'nav.crm': 'إدارة العلاقات',
-  'nav.salesCommerce': 'المبيعات والتجارة',
-  'nav.projectManagement': 'إدارة المشاريع',
   'nav.pages': 'الصفحات',
   'nav.components': 'المكونات',
   'nav.documentation': 'التوثيق',
@@ -11,23 +8,7 @@ export default {
   // Nav Items — Apps
   'nav.kanbanBoard': 'لوحة كانبان',
   'nav.databaseCreator': 'منشئ قواعد البيانات',
-
-  // Nav Items — CRM
-  'nav.contacts': 'جهات الاتصال',
-  'nav.leads': 'العملاء المحتملين',
-  'nav.dealsPipeline': 'أنبوب الصفقات',
-  'nav.companies': 'الشركات',
-  'nav.activities': 'الأنشطة',
-
-  // Nav Items — Sales
-  'nav.quotes': 'عروض الأسعار',
-  'nav.invoices': 'الفواتير',
-  'nav.orders': 'الطلبات',
-  'nav.products': 'المنتجات',
-  'nav.customers': 'العملاء',
-
-  // Nav Items — Project Management
-  'nav.projects': 'المشاريع',
+  'nav.arrayEmbedder': 'مضمّن المصفوفات',
 
   // Nav Items — Pages
   'nav.authentication': 'المصادقة',

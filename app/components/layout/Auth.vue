@@ -18,7 +18,7 @@ defineProps<{
       <div class="relative z-20 mt-auto">
         <blockquote class="space-y-2">
           <p class="text-lg">
-            &ldquo;Adeel Workspace has transformed how we manage our entire business — from CRM to project management, all in one beautiful platform.&rdquo;
+            &ldquo;Adeel Workspace has transformed how we manage our entire business — powerful tools, all in one beautiful platform.&rdquo;
           </p>
           <footer class="text-sm">
             Adeel Jabbar, Founder

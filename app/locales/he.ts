@@ -1,9 +1,6 @@
 export default {
   // Navigation Headings
   'nav.apps': 'אפליקציות',
-  'nav.crm': 'ניהול לקוחות',
-  'nav.salesCommerce': 'מכירות ומסחר',
-  'nav.projectManagement': 'ניהול פרויקטים',
   'nav.pages': 'דפים',
   'nav.components': 'רכיבים',
   'nav.documentation': 'תיעוד',
@@ -11,23 +8,7 @@ export default {
   // Nav Items — Apps
   'nav.kanbanBoard': 'לוח קנבן',
   'nav.databaseCreator': 'יוצר מסדי נתונים',
-
-  // Nav Items — CRM
-  'nav.contacts': 'אנשי קשר',
-  'nav.leads': 'לידים',
-  'nav.dealsPipeline': 'צינור עסקאות',
-  'nav.companies': 'חברות',
-  'nav.activities': 'פעילויות',
-
-  // Nav Items — Sales
-  'nav.quotes': 'הצעות מחיר',
-  'nav.invoices': 'חשבוניות',
-  'nav.orders': 'הזמנות',
-  'nav.products': 'מוצרים',
-  'nav.customers': 'לקוחות',
-
-  // Nav Items — Project Management
-  'nav.projects': 'פרויקטים',
+  'nav.arrayEmbedder': 'הטמעת מערכים',
 
   // Nav Items — Pages
   'nav.authentication': 'אימות',

@@ -1,9 +1,6 @@
 export default {
   // Navigation Headings
   'nav.apps': 'Aplicaciones',
-  'nav.crm': 'CRM',
-  'nav.salesCommerce': 'Ventas y Comercio',
-  'nav.projectManagement': 'Gestión de Proyectos',
   'nav.pages': 'Páginas',
   'nav.components': 'Componentes',
   'nav.documentation': 'Documentación',
@@ -11,23 +8,7 @@ export default {
   // Nav Items — Apps
   'nav.kanbanBoard': 'Tablero Kanban',
   'nav.databaseCreator': 'Creador de Base de Datos',
-
-  // Nav Items — CRM
-  'nav.contacts': 'Contactos',
-  'nav.leads': 'Prospectos',
-  'nav.dealsPipeline': 'Pipeline de Negocios',
-  'nav.companies': 'Empresas',
-  'nav.activities': 'Actividades',
-
-  // Nav Items — Sales
-  'nav.quotes': 'Cotizaciones',
-  'nav.invoices': 'Facturas',
-  'nav.orders': 'Pedidos',
-  'nav.products': 'Productos',
-  'nav.customers': 'Clientes',
-
-  // Nav Items — Project Management
-  'nav.projects': 'Proyectos',
+  'nav.arrayEmbedder': 'Insertador de Arreglos',
 
   // Nav Items — Pages
   'nav.authentication': 'Autenticación',

@@ -1,31 +1,19 @@
 <script setup lang="ts">
-
 import { ConfigProvider } from 'reka-ui'
 import { Toaster } from '@/components/ui/sonner'
 import 'vue-sonner/style.css'
 
 const colorMode = useColorMode()
-const color = computed(() => colorMode.value === 'dark' ? '#09090b' : '#ffffff')
-const { theme, direction: savedDirection } = useAppSettings()
+// Force dark mode permanently across the whole app
+colorMode.preference = 'dark'
+
 const { locale } = useLocale()
-
-// SSR-safe direction: read from cookie (works on both server and client)
-const dir = computed(() => savedDirection.value === 'rtl' ? 'rtl' : 'ltr')
-
-// Sync the DOM <html dir="..."> attribute on client side
-const textDirection = useTextDirection()
-onMounted(() => {
-  textDirection.value = dir.value
-})
-watch(dir, (newDir) => {
-  textDirection.value = newDir
-})
 
 useHead({
   meta: [
     { charset: 'utf-8' },
     { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-    { key: 'theme-color', name: 'theme-color', content: color },
+    { key: 'theme-color', name: 'theme-color', content: '#09090b' },
   ],
   link: [
     { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
@@ -35,10 +23,10 @@ useHead({
   ],
   htmlAttrs: {
     lang: computed(() => locale.value || 'en'),
-    dir: computed(() => dir.value),
+    dir: 'ltr',
   },
   bodyAttrs: {
-    class: computed(() => `color-${theme.value?.color || 'default'} theme-${theme.value?.type || 'default'}`),
+    class: 'dark',
   },
 })
 
@@ -61,20 +49,21 @@ useSeoMeta({
 const router = useRouter()
 
 defineShortcuts({
-  'G-H': () => router.push('/projects/list'),
+  'G-H': () => router.push('/database-creator'),
+  'G-A': () => router.push('/array-embedder'),
 })
 </script>
 
 <template>
-  <Body class="overscroll-none antialiased bg-background text-foreground">
-    <ConfigProvider :dir="dir">
+  <Body class="overscroll-none antialiased bg-background text-foreground dark">
+    <ConfigProvider dir="ltr">
       <div id="app" vaul-drawer-wrapper class="relative">
         <NuxtLayout>
           <NuxtPage />
         </NuxtLayout>
       </div>
 
-      <Toaster :theme="colorMode.preference as any || 'system'" />
+      <Toaster theme="dark" />
     </ConfigProvider>
   </Body>
 </template>

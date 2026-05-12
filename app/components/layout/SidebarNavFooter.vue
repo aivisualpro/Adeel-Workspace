@@ -9,13 +9,8 @@ defineProps<{
   }
 }>()
 
-const { isMobile, setOpenMobile } = useSidebar()
-
-function handleLogout() {
-  navigateTo('/login')
-}
-
-const showModalTheme = ref(false)
+const { isMobile } = useSidebar()
+const { logout } = useAuth()
 </script>
 
 <template>
@@ -60,36 +55,7 @@ const showModalTheme = ref(false)
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuGroup>
-            <DropdownMenuItem>
-              <Icon name="i-lucide-sparkles" />
-              Upgrade to Pro
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuGroup>
-            <DropdownMenuItem>
-              <Icon name="i-lucide-badge-check" />
-              Account
-            </DropdownMenuItem>
-            <DropdownMenuItem as-child>
-              <NuxtLink to="/settings" @click="setOpenMobile(false)">
-                <Icon name="i-lucide-settings" />
-                Settings
-              </NuxtLink>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Icon name="i-lucide-bell" />
-              Notifications
-            </DropdownMenuItem>
-
-            <DropdownMenuItem @click="showModalTheme = true">
-              <Icon name="i-lucide-paintbrush" />
-              Theme
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem @click="handleLogout">
+          <DropdownMenuItem class="text-destructive focus:text-destructive cursor-pointer" @click="logout">
             <Icon name="i-lucide-log-out" />
             Log out
           </DropdownMenuItem>
@@ -97,20 +63,7 @@ const showModalTheme = ref(false)
       </DropdownMenu>
     </SidebarMenuItem>
   </SidebarMenu>
-
-  <Dialog v-model:open="showModalTheme">
-    <DialogContent>
-      <DialogHeader>
-        <DialogTitle>Customize</DialogTitle>
-        <DialogDescription class="text-xs text-muted-foreground">
-          Customize & Preview in Real Time
-        </DialogDescription>
-      </DialogHeader>
-      <ThemeCustomize />
-    </DialogContent>
-  </Dialog>
 </template>
 
 <style scoped>
-
 </style>
