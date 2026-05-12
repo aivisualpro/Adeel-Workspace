@@ -32,26 +32,59 @@ export function getProgress(sessionId: string): ImportProgress | undefined {
 }
 
 function parseCSV(raw: string): { headers: string[], rows: Record<string, string>[] } {
-    const lines = raw.split(/\r?\n/)
-    if (lines.length === 0) return { headers: [], rows: [] }
+    if (!raw.trim()) return { headers: [], rows: [] }
 
+    // ── Split into logical rows (handles multi-line quoted fields) ────────
+    const logicalRows: string[] = []
+    let currentRow = ''
+    let inQuotes = false
+
+    for (let i = 0; i < raw.length; i++) {
+        const ch = raw[i]!
+
+        if (ch === '"') {
+            if (inQuotes && i + 1 < raw.length && raw[i + 1] === '"') {
+                // Escaped quote "" → append both and skip next
+                currentRow += '""'
+                i++
+            }
+            else {
+                inQuotes = !inQuotes
+                currentRow += ch
+            }
+        }
+        else if ((ch === '\n' || ch === '\r') && !inQuotes) {
+            // End of logical row
+            if (ch === '\r' && i + 1 < raw.length && raw[i + 1] === '\n') i++
+            if (currentRow.trim()) logicalRows.push(currentRow)
+            currentRow = ''
+        }
+        else {
+            currentRow += ch
+        }
+    }
+    if (currentRow.trim()) logicalRows.push(currentRow)
+
+    if (logicalRows.length === 0) return { headers: [], rows: [] }
+
+    // ── Parse a single CSV row into field values ─────────────────────────
     const parseRow = (line: string): string[] => {
         const result: string[] = []
         let current = ''
-        let inQuotes = false
+        let quoted = false
 
         for (let i = 0; i < line.length; i++) {
             const char = line[i]
             if (char === '"') {
-                if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+                if (quoted && i + 1 < line.length && line[i + 1] === '"') {
                     current += '"'
                     i++
                 }
                 else {
-                    inQuotes = !inQuotes
+                    quoted = !quoted
                 }
             }
-            else if (char === ',' && !inQuotes) {
+            else if (char === ',' && !quoted) {
                 result.push(current.trim())
                 current = ''
             }
@@ -63,14 +96,11 @@ function parseCSV(raw: string): { headers: string[], rows: Record<string, string
         return result
     }
 
-    const headers = parseRow(lines[0]!).map(h => h.replace(/^["']|["']$/g, '').trim())
+    const headers = parseRow(logicalRows[0]!).map(h => h.replace(/^["']|["']$/g, '').trim())
     const rows: Record<string, string>[] = []
 
-    for (let i = 1; i < lines.length; i++) {
-        const line = lines[i]!.trim()
-        if (!line) continue
-
-        const values = parseRow(line)
+    for (let i = 1; i < logicalRows.length; i++) {
+        const values = parseRow(logicalRows[i]!)
         const row: Record<string, string> = {}
         for (let j = 0; j < headers.length; j++) {
             const val = (values[j] || '').replace(/^["']|["']$/g, '').trim()
@@ -78,6 +108,8 @@ function parseCSV(raw: string): { headers: string[], rows: Record<string, string
         }
         rows.push(row)
     }
+
+    console.log(`[CSV Parser] ${logicalRows.length - 1} logical rows from ${raw.split(/\r?\n/).length} physical lines (${headers.length} columns)`)
 
     return { headers, rows }
 }
@@ -120,6 +152,9 @@ export default defineEventHandler(async (event) => {
         references = []
     }
 
+    console.log(`[Import] Source: "${source}", DB: "${database}", Collection: "${collection}"`)
+    console.log(`[Import] References received:`, JSON.stringify(references, null, 2))
+
     // Initialize progress
     const progress: ImportProgress = {
         status: 'parsing',
@@ -144,6 +179,15 @@ export default defineEventHandler(async (event) => {
     progress.total = rows.length
     progress.totalBatches = Math.ceil(rows.length / batchSize)
     progress.message = `Parsed ${rows.length.toLocaleString()} records with ${headers.length} fields`
+
+    // Log reference field diagnostics
+    if (references.length > 0 && rows.length > 0) {
+        for (const ref of references) {
+            const nonEmpty = rows.filter(r => (r[ref.localField] ?? '').trim() !== '')
+            const firstNonEmpty = nonEmpty.length > 0 ? nonEmpty[0]![ref.localField] : '<ALL EMPTY>'
+            console.log(`[Import] CSV field "${ref.localField}": ${nonEmpty.length} of ${rows.length} rows have values. First non-empty: "${firstNonEmpty}"`)
+        }
+    }
 
     if (rows.length === 0) {
         progress.status = 'done'
@@ -188,11 +232,19 @@ async function importInBackground(
                     { projection: { _id: 1, [ref.refField]: 1 } },
                 ).toArray()
 
+                console.log(`[RefLookup] Collection "${ref.collection}" → fetched ${refDocs.length} docs, matching field: "${ref.refField}"`)
+
                 const lookupMap: RefMap = new Map()
                 for (const doc of refDocs) {
-                    const key = String(doc[ref.refField] ?? '')
+                    const rawVal = doc[ref.refField]
+                    // Normalize: handle numbers, ObjectIds, and strings
+                    const key = String(rawVal ?? '').trim()
                     if (key) lookupMap.set(key.toLowerCase(), doc._id as ObjectId)
                 }
+
+                // Log sample keys for debugging
+                const sampleKeys = Array.from(lookupMap.keys()).slice(0, 5)
+                console.log(`[RefLookup] Built lookup map with ${lookupMap.size} keys. Sample keys:`, sampleKeys)
 
                 refMaps.set(ref.localField, lookupMap)
             }
@@ -200,6 +252,12 @@ async function importInBackground(
 
         progress.status = 'importing'
         progress.message = 'Importing records...'
+
+        // Track reference resolution stats
+        const refStats: Record<string, { hit: number, miss: number, empty: number }> = {}
+        for (const ref of references) {
+            refStats[ref.localField] = { hit: 0, miss: 0, empty: 0 }
+        }
 
         // ── Process in batches ───────────────────────────────────────────────
         for (let i = 0; i < rows.length; i += batchSize) {
@@ -213,18 +271,37 @@ async function importInBackground(
                     const ref = references.find(r => r.localField === key)
 
                     if (ref) {
-                        // Resolve to ObjectId
+                        // Resolve to ObjectId — trim + lowercase to match the lookup map
                         const lookupMap = refMaps.get(key)
-                        const objectId = lookupMap?.get(val.toLowerCase()) ?? null
-                        // Store original value field (remove it; replaced by ref field)
+                        const lookupKey = val.trim().toLowerCase()
+                        const objectId = lookupMap?.get(lookupKey) ?? null
+
+                        // Track stats
+                        if (refStats[key]) {
+                            if (!lookupKey) refStats[key].empty++
+                            else if (objectId) refStats[key].hit++
+                            else refStats[key].miss++
+                        }
+
+                        // Debug: log first few non-empty misses to help diagnose
+                        if (!objectId && lookupKey && refStats[key]?.miss <= 3) {
+                            console.log(`[RefLookup:MISS] CSV field "${key}" value "${val}" (key: "${lookupKey}") not found in lookup map (${lookupMap?.size ?? 0} entries)`)
+                        }
+
+                        // Store resolved ObjectId (or null if unresolved)
                         doc[ref.storeField] = objectId
-                        // Optionally keep the raw text value for debugging
-                        // doc[`${ref.storeField}_raw`] = val
                     }
                     else {
                         // Normal field coercion
                         if (val === '') {
                             doc[key] = null
+                        }
+                        // Y / N → boolean
+                        else if (val === 'Y' || val === 'y') {
+                            doc[key] = true
+                        }
+                        else if (val === 'N' || val === 'n') {
+                            doc[key] = false
                         }
                         else if (val.toLowerCase() === 'true') {
                             doc[key] = true
@@ -232,8 +309,31 @@ async function importInBackground(
                         else if (val.toLowerCase() === 'false') {
                             doc[key] = false
                         }
+                        // Currency / formatted numbers: $478,541.06  -$1,234.56  1,234,567  €50,000
+                        // Must be checked BEFORE plain number and comma-list to avoid splitting on thousand separators
+                        else if (/^[£€$¥₹]?\s*-?\d{1,3}(,\d{3})*(\.\d+)?$/.test(val.trim()) || /^-?[£€$¥₹]\s*\d{1,3}(,\d{3})*(\.\d+)?$/.test(val.trim())) {
+                            const cleaned = val.replace(/[^0-9.\-]/g, '')
+                            doc[key] = cleaned !== '' ? Number(cleaned) : val
+                        }
                         else if (!isNaN(Number(val)) && val.trim() !== '') {
                             doc[key] = Number(val)
+                        }
+                        // Comma-separated list → array of coerced values
+                        else if (val.includes(',')) {
+                            const parts = val.split(',').map(p => p.trim()).filter(Boolean)
+                            if (parts.length > 1) {
+                                doc[key] = parts.map(p => {
+                                    if (p === 'Y' || p === 'y') return true
+                                    if (p === 'N' || p === 'n') return false
+                                    if (p.toLowerCase() === 'true') return true
+                                    if (p.toLowerCase() === 'false') return false
+                                    if (!isNaN(Number(p)) && p !== '') return Number(p)
+                                    return p
+                                })
+                            }
+                            else {
+                                doc[key] = parts[0] ?? val
+                            }
                         }
                         else {
                             doc[key] = val
@@ -254,6 +354,11 @@ async function importInBackground(
             progress.speed = progress.elapsed > 0 ? Math.round((progress.imported / progress.elapsed) * 1000) : 0
             progress.eta = progress.speed > 0 ? Math.round(progress.remainingRecords / progress.speed) : 0
             progress.message = `Imported ${progress.imported.toLocaleString()} of ${progress.total.toLocaleString()} records (batch ${progress.batchesDone}/${progress.totalBatches})`
+        }
+
+        // Log reference resolution summary
+        for (const [field, stats] of Object.entries(refStats)) {
+            console.log(`[RefLookup:SUMMARY] Field "${field}": ${stats.hit} resolved, ${stats.miss} not found, ${stats.empty} empty`)
         }
 
         progress.status = 'done'

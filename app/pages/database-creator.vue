@@ -43,6 +43,14 @@ const sourceOptions: SourceOption[] = [
     gradient: 'from-orange-500 via-amber-500 to-yellow-500',
     accentColor: 'orange',
   },
+  {
+    key: 'lagniappepro',
+    label: 'LagniappePRO',
+    description: 'LagniappePRO ERP database cluster',
+    icon: 'i-lucide-building-2',
+    gradient: 'from-rose-500 via-pink-500 to-fuchsia-500',
+    accentColor: 'rose',
+  },
 ]
 
 const selectedSource = ref<string>('adeel')
@@ -305,16 +313,16 @@ function processFile(file: File) {
   const reader = new FileReader()
   reader.onload = (ev) => {
     const text = ev.target?.result as string
-    const lines = text.split(/\r?\n/).filter(l => l.trim())
-    if (lines.length === 0) return
+    const logicalRows = splitCSVIntoLogicalRows(text)
+    if (logicalRows.length === 0) return
 
-    const headers = parseCSVRow(lines[0]!)
+    const headers = parseCSVRow(logicalRows[0]!)
     csvPreviewHeaders.value = headers
-    csvRowCount.value = lines.length - 1
+    csvRowCount.value = logicalRows.length - 1
 
     const preview: Record<string, string>[] = []
-    for (let i = 1; i <= Math.min(5, lines.length - 1); i++) {
-      const vals = parseCSVRow(lines[i]!)
+    for (let i = 1; i <= Math.min(5, logicalRows.length - 1); i++) {
+      const vals = parseCSVRow(logicalRows[i]!)
       const row: Record<string, string> = {}
       headers.forEach((h, idx) => { row[h] = vals[idx] || '' })
       preview.push(row)
@@ -329,6 +337,36 @@ function processFile(file: File) {
     references.value = []
   }
   reader.readAsText(file)
+}
+
+// Split raw CSV text into logical rows, respecting multi-line quoted fields
+function splitCSVIntoLogicalRows(raw: string): string[] {
+  const rows: string[] = []
+  let current = ''
+  let inQuotes = false
+  for (let i = 0; i < raw.length; i++) {
+    const ch = raw[i]!
+    if (ch === '"') {
+      if (inQuotes && i + 1 < raw.length && raw[i + 1] === '"') {
+        current += '""'
+        i++
+      }
+      else {
+        inQuotes = !inQuotes
+        current += ch
+      }
+    }
+    else if ((ch === '\n' || ch === '\r') && !inQuotes) {
+      if (ch === '\r' && i + 1 < raw.length && raw[i + 1] === '\n') i++
+      if (current.trim()) rows.push(current)
+      current = ''
+    }
+    else {
+      current += ch
+    }
+  }
+  if (current.trim()) rows.push(current)
+  return rows
 }
 
 function parseCSVRow(line: string): string[] {
@@ -472,6 +510,7 @@ const formatDuration = (ms: number) => {
           'from-blue-500 via-indigo-500 to-violet-500': activeSourceOption.accentColor === 'blue',
           'from-emerald-500 via-teal-500 to-cyan-500': activeSourceOption.accentColor === 'emerald',
           'from-orange-500 via-amber-500 to-yellow-500': activeSourceOption.accentColor === 'orange',
+          'from-rose-500 via-pink-500 to-fuchsia-500': activeSourceOption.accentColor === 'rose',
         }"
       />
 
@@ -483,6 +522,7 @@ const formatDuration = (ms: number) => {
               'bg-blue-500/10 text-blue-500': activeSourceOption.accentColor === 'blue',
               'bg-emerald-500/10 text-emerald-500': activeSourceOption.accentColor === 'emerald',
               'bg-orange-500/10 text-orange-500': activeSourceOption.accentColor === 'orange',
+              'bg-rose-500/10 text-rose-500': activeSourceOption.accentColor === 'rose',
             }"
           >
             <Icon name="i-lucide-plug-zap" class="size-3.5" />
@@ -495,6 +535,7 @@ const formatDuration = (ms: number) => {
               'border-blue-500/40 text-blue-500 bg-blue-500/5': activeSourceOption.accentColor === 'blue',
               'border-emerald-500/40 text-emerald-500 bg-emerald-500/5': activeSourceOption.accentColor === 'emerald',
               'border-orange-500/40 text-orange-500 bg-orange-500/5': activeSourceOption.accentColor === 'orange',
+              'border-rose-500/40 text-rose-500 bg-rose-500/5': activeSourceOption.accentColor === 'rose',
             }"
           >
             <span class="relative flex size-1.5">
@@ -504,6 +545,7 @@ const formatDuration = (ms: number) => {
                   'bg-blue-400': activeSourceOption.accentColor === 'blue',
                   'bg-emerald-400': activeSourceOption.accentColor === 'emerald',
                   'bg-orange-400': activeSourceOption.accentColor === 'orange',
+                  'bg-rose-400': activeSourceOption.accentColor === 'rose',
                 }"
               />
               <span
@@ -512,6 +554,7 @@ const formatDuration = (ms: number) => {
                   'bg-blue-500': activeSourceOption.accentColor === 'blue',
                   'bg-emerald-500': activeSourceOption.accentColor === 'emerald',
                   'bg-orange-500': activeSourceOption.accentColor === 'orange',
+                  'bg-rose-500': activeSourceOption.accentColor === 'rose',
                 }"
               />
             </span>
@@ -535,6 +578,7 @@ const formatDuration = (ms: number) => {
                     'border-blue-500/40 bg-blue-500/5 hover:border-blue-500/60': activeSourceOption.accentColor === 'blue',
                     'border-emerald-500/40 bg-emerald-500/5 hover:border-emerald-500/60': activeSourceOption.accentColor === 'emerald',
                     'border-orange-500/40 bg-orange-500/5 hover:border-orange-500/60': activeSourceOption.accentColor === 'orange',
+                    'border-rose-500/40 bg-rose-500/5 hover:border-rose-500/60': activeSourceOption.accentColor === 'rose',
                   },
               isImporting ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
             ]"
@@ -547,6 +591,7 @@ const formatDuration = (ms: number) => {
                 'bg-blue-500/15 text-blue-500 ring-blue-500/30': activeSourceOption.accentColor === 'blue',
                 'bg-emerald-500/15 text-emerald-500 ring-emerald-500/30': activeSourceOption.accentColor === 'emerald',
                 'bg-orange-500/15 text-orange-500 ring-orange-500/30': activeSourceOption.accentColor === 'orange',
+                'bg-rose-500/15 text-rose-500 ring-rose-500/30': activeSourceOption.accentColor === 'rose',
               }"
             >
               <Icon :name="activeSourceOption.icon" class="size-5" />
@@ -560,6 +605,7 @@ const formatDuration = (ms: number) => {
                   'text-blue-500': activeSourceOption.accentColor === 'blue',
                   'text-emerald-500': activeSourceOption.accentColor === 'emerald',
                   'text-orange-500': activeSourceOption.accentColor === 'orange',
+                  'text-rose-500': activeSourceOption.accentColor === 'rose',
                 }"
               >
                 {{ activeSourceOption.label }}
@@ -575,6 +621,7 @@ const formatDuration = (ms: number) => {
                   'bg-blue-500 text-white': activeSourceOption.accentColor === 'blue',
                   'bg-emerald-500 text-white': activeSourceOption.accentColor === 'emerald',
                   'bg-orange-500 text-white': activeSourceOption.accentColor === 'orange',
+                  'bg-rose-500 text-white': activeSourceOption.accentColor === 'rose',
                 }"
               >
                 <Icon name="i-lucide-check" class="size-3" />
@@ -615,6 +662,7 @@ const formatDuration = (ms: number) => {
                           'bg-blue-500/10': option.accentColor === 'blue',
                           'bg-emerald-500/10': option.accentColor === 'emerald',
                           'bg-orange-500/10': option.accentColor === 'orange',
+                          'bg-rose-500/10': option.accentColor === 'rose',
                         }
                       : 'hover:bg-muted/60',
                   ]"
@@ -629,6 +677,7 @@ const formatDuration = (ms: number) => {
                             'bg-blue-500/15 text-blue-500 ring-1 ring-blue-500/30': option.accentColor === 'blue',
                             'bg-emerald-500/15 text-emerald-500 ring-1 ring-emerald-500/30': option.accentColor === 'emerald',
                             'bg-orange-500/15 text-orange-500 ring-1 ring-orange-500/30': option.accentColor === 'orange',
+                            'bg-rose-500/15 text-rose-500 ring-1 ring-rose-500/30': option.accentColor === 'rose',
                           }
                         : 'bg-muted/60 text-muted-foreground group-hover:bg-muted',
                     ]"
@@ -646,6 +695,7 @@ const formatDuration = (ms: number) => {
                               'text-blue-500': option.accentColor === 'blue',
                               'text-emerald-500': option.accentColor === 'emerald',
                               'text-orange-500': option.accentColor === 'orange',
+                              'text-rose-500': option.accentColor === 'rose',
                             }
                           : 'text-foreground',
                       ]"
@@ -671,6 +721,7 @@ const formatDuration = (ms: number) => {
                         'bg-blue-500 text-white': option.accentColor === 'blue',
                         'bg-emerald-500 text-white': option.accentColor === 'emerald',
                         'bg-orange-500 text-white': option.accentColor === 'orange',
+                        'bg-rose-500 text-white': option.accentColor === 'rose',
                       }"
                     >
                       <Icon name="i-lucide-check" class="size-3" />

@@ -1,11 +1,12 @@
 import { MongoClient } from 'mongodb'
 
-type SourceKey = 'adeel' | 'streetsmart' | 'culturalgourmet'
+type SourceKey = 'adeel' | 'streetsmart' | 'culturalgourmet' | 'lagniappepro'
 
 const connectionMap: Record<SourceKey, { envKey: string, label: string }> = {
     adeel: { envKey: 'NUXT_MONGODB_URI', label: 'Adeel' },
     streetsmart: { envKey: 'NUXT_STREETSMART_MONGODB_URI', label: 'Street Smart' },
     culturalgourmet: { envKey: 'NUXT_CULTURALGOURMET_MONGODB_URI', label: 'Cultural Gourmet' },
+    lagniappepro: { envKey: 'LAGNIAPPEPRO_MONGODB_URI', label: 'LagniappePRO' },
 }
 
 // Maintain separate client pools per source
@@ -13,8 +14,9 @@ const _clients: Partial<Record<SourceKey, MongoClient>> = {}
 
 /**
  * Get a MongoClient for the given source.
- * - 'adeel'       → uses NUXT_MONGODB_URI
- * - 'streetsmart'  → uses NUXT_STREETSMART_MONGODB_URI
+ * - 'adeel'        → uses NUXT_MONGODB_URI
+ * - 'streetsmart'   → uses NUXT_STREETSMART_MONGODB_URI
+ * - 'lagniappepro'  → uses LAGNIAPPEPRO_MONGODB_URI
  *
  * Defaults to 'adeel' when no source is provided for backwards compatibility.
  */
