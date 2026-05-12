@@ -31,6 +31,59 @@ export function getProgress(sessionId: string): ImportProgress | undefined {
     return progressMap.get(sessionId)
 }
 
+/**
+ * Parse a cell containing one or more {key: value , ...} blocks.
+ * Handles: {name: X , color: Y , icon: Z , variant: V , sortOrder: N , isDefault: B} , {name: ...}
+ * Returns an array of objects, or null if the cell doesn't match this format.
+ */
+function parseObjectArrayCell(val: string): Record<string, any>[] | null {
+    const trimmed = val.trim()
+    if (!trimmed.startsWith('{')) return null
+
+    const KNOWN_KEYS = ['name', 'color', 'icon', 'variant', 'sortOrder', 'isDefault']
+    const KEY_PATTERN = new RegExp(`(${KNOWN_KEYS.join('|')})\\s*:`, 'g')
+
+    const inner = trimmed.replace(/^\{/, '').replace(/\}$/, '')
+    const objectStrings = (`{${inner}}`)
+        .split(/\}\s*,\s*\{/)
+        .map(s => s.replace(/^\{/, '').replace(/\}$/, '').trim())
+        .filter(Boolean)
+
+    if (objectStrings.length === 0) return null
+
+    const results: Record<string, any>[] = []
+
+    for (const objStr of objectStrings) {
+        const positions: Array<{ key: string; start: number; end: number }> = []
+        let match
+        KEY_PATTERN.lastIndex = 0
+        while ((match = KEY_PATTERN.exec(objStr)) !== null) {
+            positions.push({ key: match[1] ?? '', start: match.index, end: match.index + match[0].length })
+        }
+        if (positions.length === 0) continue
+
+        const result: Record<string, string> = {}
+        for (let i = 0; i < positions.length; i++) {
+            const { key, end } = positions[i]!
+            const nextPos = positions[i + 1]
+            const nextStart = nextPos !== undefined ? nextPos.start : objStr.length
+            result[key] = objStr.slice(end, nextStart).trim().replace(/\s*,\s*$/, '').trim()
+        }
+        if (!result.name?.trim()) continue
+
+        results.push({
+            name: result.name.trim(),
+            color: result.color?.trim() ?? '',
+            icon: result.icon?.trim() ?? '',
+            variant: result.variant?.trim() ?? 'semi-filled',
+            sortOrder: Number(result.sortOrder) || 0,
+            isDefault: result.isDefault?.trim().toUpperCase() === 'TRUE',
+        })
+    }
+
+    return results.length > 0 ? results : null
+}
+
 function parseCSV(raw: string): { headers: string[], rows: Record<string, string>[] } {
     if (!raw.trim()) return { headers: [], rows: [] }
 
@@ -72,6 +125,7 @@ function parseCSV(raw: string): { headers: string[], rows: Record<string, string
         const result: string[] = []
         let current = ''
         let quoted = false
+        let braceDepth = 0 // protect commas inside {key: value , ...} blocks
 
         for (let i = 0; i < line.length; i++) {
             const char = line[i]
@@ -84,7 +138,15 @@ function parseCSV(raw: string): { headers: string[], rows: Record<string, string
                     quoted = !quoted
                 }
             }
-            else if (char === ',' && !quoted) {
+            else if (char === '{' && !quoted) {
+                braceDepth++
+                current += char
+            }
+            else if (char === '}' && !quoted) {
+                braceDepth--
+                current += char
+            }
+            else if (char === ',' && !quoted && braceDepth === 0) {
                 result.push(current.trim())
                 current = ''
             }
@@ -317,6 +379,10 @@ async function importInBackground(
                         }
                         else if (!isNaN(Number(val)) && val.trim() !== '') {
                             doc[key] = Number(val)
+                        }
+                        // {key: value , ...} , {key: value , ...} → array of objects
+                        else if (val.trim().startsWith('{')) {
+                            doc[key] = parseObjectArrayCell(val)
                         }
                         // Comma-separated list → array of coerced values
                         else if (val.includes(',')) {

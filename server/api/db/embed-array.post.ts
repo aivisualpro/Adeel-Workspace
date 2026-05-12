@@ -58,6 +58,7 @@ function parseCSV(raw: string): { headers: string[], rows: Record<string, string
         const result: string[] = []
         let current = ''
         let quoted = false
+        let braceDepth = 0  // track {} nesting so commas inside objects aren't treated as separators
         for (let i = 0; i < line.length; i++) {
             const char = line[i]
             if (char === '"') {
@@ -67,7 +68,13 @@ function parseCSV(raw: string): { headers: string[], rows: Record<string, string
                 } else {
                     quoted = !quoted
                 }
-            } else if (char === ',' && !quoted) {
+            } else if (char === '{' && !quoted) {
+                braceDepth++
+                current += char
+            } else if (char === '}' && !quoted) {
+                braceDepth--
+                current += char
+            } else if (char === ',' && !quoted && braceDepth === 0) {
                 result.push(current.trim())
                 current = ''
             } else {
@@ -108,19 +115,76 @@ function coerceValue(val: string): any {
 }
 
 /**
- * Like coerceValue but also handles comma-separated lists.
- * If the raw string contains " , " (comma with optional spaces on either side)
- * AND splitting produces more than one non-empty part, the result is an
- * indexed object:  { "0": part0, "1": part1, … }
- * This lets the frontend display e.g. phone: { 0: "(770) 280-5187", 1: "(770) 982-1905" }
+ * Parse a cell that contains one or more {key: value , key: value} blocks.
+ * Returns an array of parsed objects, or null if the format doesn't match.
  *
- * Single values (no comma, or only one non-empty part after split) are passed
- * straight through to coerceValue() as before.
+ * Handles:
+ *   {name: Declined to Bid , color: #71717a , icon: i-lucide-alert-triangle , variant: filled , sortOrder: 1 , isDefault: FALSE}
+ *   , {name: Bid Submitted , color: #f59e0b , ...}
  */
+function parseObjectArrayCell(val: string): Record<string, any>[] | null {
+    const trimmed = val.trim()
+    // Must start with { to be an object-array cell
+    if (!trimmed.startsWith('{')) return null
+
+    const KNOWN_KEYS = ['name', 'color', 'icon', 'variant', 'sortOrder', 'isDefault']
+    const KEY_PATTERN = new RegExp(`(${KNOWN_KEYS.join('|')})\\s*:`, 'g')
+
+    // Strip outer braces, then split on '} , {' to get individual object strings
+    const inner = trimmed.replace(/^\{/, '').replace(/\}$/, '')
+    const objectStrings = (`{${inner}}`)
+        .split(/\}\s*,\s*\{/)
+        .map(s => s.replace(/^\{/, '').replace(/\}$/, '').trim())
+        .filter(Boolean)
+
+    if (objectStrings.length === 0) return null
+
+    const results: Record<string, any>[] = []
+
+    for (const objStr of objectStrings) {
+        // Find all key positions
+        const positions: Array<{ key: string; start: number; end: number }> = []
+        let match
+        KEY_PATTERN.lastIndex = 0
+        while ((match = KEY_PATTERN.exec(objStr)) !== null) {
+            positions.push({ key: match[1] ?? '', start: match.index, end: match.index + match[0].length })
+        }
+
+        if (positions.length === 0) continue
+
+        const result: Record<string, string> = {}
+        for (let i = 0; i < positions.length; i++) {
+            const { key, end } = positions[i]!
+            const nextPos = positions[i + 1]
+            const nextStart = nextPos !== undefined ? nextPos.start : objStr.length
+            const value = objStr.slice(end, nextStart).trim().replace(/\s*,\s*$/, '').trim()
+            result[key] = value
+        }
+
+        if (!result.name?.trim()) continue
+
+        results.push({
+            name: result.name.trim(),
+            color: result.color?.trim() ?? '',
+            icon: result.icon?.trim() ?? '',
+            variant: result.variant?.trim() ?? 'semi-filled',
+            sortOrder: Number(result.sortOrder) || 0,
+            isDefault: result.isDefault?.trim().toUpperCase() === 'TRUE',
+        })
+    }
+
+    return results.length > 0 ? results : null
+}
+
 function coerceFieldValue(val: string): any {
     const trimmed = val.trim()
     if (trimmed === '') return null
 
+    // ── Object-array format: {name: X , color: Y , ...} , {name: Z , ...} ──
+    const parsed = parseObjectArrayCell(trimmed)
+    if (parsed !== null) return parsed
+
+    // ── Standard comma-separated list ────────────────────────────────────────
     // Only split on " , " patterns — avoids splitting phone area-codes like (770,123)
     // We require at least one space on either side of the comma.
     const parts = trimmed.split(/\s*,\s*/).map(p => p.trim()).filter(p => p !== '')
