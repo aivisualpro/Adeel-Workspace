@@ -188,7 +188,7 @@ export default defineEventHandler(async (event) => {
     let sessionId = ''
     let batchSize = 500
     let referencesJson = '[]'
-    let keepAsStringJson = '[]'
+    let splitAsArrayJson = '[]'
     let source = 'adeel'
 
     for (const field of formData) {
@@ -197,7 +197,7 @@ export default defineEventHandler(async (event) => {
         if (field.name === 'sessionId') sessionId = field.data.toString('utf-8')
         if (field.name === 'batchSize') batchSize = parseInt(field.data.toString('utf-8')) || 500
         if (field.name === 'references') referencesJson = field.data.toString('utf-8')
-        if (field.name === 'keepAsString') keepAsStringJson = field.data.toString('utf-8')
+        if (field.name === 'splitAsArray') splitAsArrayJson = field.data.toString('utf-8')
         if (field.name === 'source') source = field.data.toString('utf-8')
         if (field.name === 'file' && field.filename) {
             csvContent = field.data.toString('utf-8')
@@ -216,19 +216,19 @@ export default defineEventHandler(async (event) => {
         references = []
     }
 
-    let keepAsStringFields: Set<string>
+    let splitAsArrayFields: Set<string>
     try {
-        const parsed = JSON.parse(keepAsStringJson) as string[]
-        keepAsStringFields = new Set(parsed)
+        const parsed = JSON.parse(splitAsArrayJson) as string[]
+        splitAsArrayFields = new Set(parsed)
     }
     catch {
-        keepAsStringFields = new Set()
+        splitAsArrayFields = new Set()
     }
 
     console.log(`[Import] Source: "${source}", DB: "${database}", Collection: "${collection}"`)
     console.log(`[Import] References received:`, JSON.stringify(references, null, 2))
-    if (keepAsStringFields.size > 0) {
-        console.log(`[Import] Keep-as-string fields:`, Array.from(keepAsStringFields))
+    if (splitAsArrayFields.size > 0) {
+        console.log(`[Import] Split-as-array fields:`, Array.from(splitAsArrayFields))
     }
 
     // Initialize progress
@@ -272,7 +272,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Start async import
-    importInBackground(database, collection, rows, batchSize, sessionId, progress, references, source, keepAsStringFields)
+    importInBackground(database, collection, rows, batchSize, sessionId, progress, references, source, splitAsArrayFields)
 
     return { success: true, sessionId, total: rows.length, fields: headers }
 })
@@ -286,7 +286,7 @@ async function importInBackground(
     progress: ImportProgress,
     references: Reference[],
     source: string,
-    keepAsStringFields: Set<string>,
+    splitAsArrayFields: Set<string>,
 ) {
     try {
         const client = await getMongoClient(source)
@@ -412,8 +412,8 @@ async function importInBackground(
                             doc[key] = parseObjectArrayCell(val)
                         }
                         // Comma-separated list → array of coerced values
-                        // UNLESS the field is marked as keep-as-string
-                        else if (val.includes(',') && !keepAsStringFields.has(key)) {
+                        // ONLY if the field is explicitly marked for array splitting
+                        else if (val.includes(',') && splitAsArrayFields.has(key)) {
                             const parts = val.split(',').map(p => p.trim()).filter(Boolean)
                             if (parts.length > 1) {
                                 doc[key] = parts.map(p => {

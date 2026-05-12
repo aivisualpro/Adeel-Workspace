@@ -186,15 +186,16 @@ const references = ref<ReferenceConfig[]>([])
 const availableCollections = ref<string[]>([])
 const loadingCollections = ref(false)
 
-// ─── Keep-as-String Fields ────────────────────────────────────────────────────
-// Fields in this set will NOT be auto-split into arrays when they contain commas
-const keepAsString = ref<Set<string>>(new Set())
+// ─── Split-as-Array Fields ────────────────────────────────────────────────────
+// By default, comma-containing fields stay as plain strings.
+// Fields in this set WILL be split into arrays.
+const splitAsArray = ref<Set<string>>(new Set())
 
-function toggleKeepAsString(field: string) {
-  const next = new Set(keepAsString.value)
+function toggleSplitAsArray(field: string) {
+  const next = new Set(splitAsArray.value)
   if (next.has(field)) next.delete(field)
   else next.add(field)
-  keepAsString.value = next
+  splitAsArray.value = next
 }
 
 // Auto-detect which CSV fields contain commas (potential array candidates)
@@ -364,9 +365,9 @@ function processFile(file: File) {
       collection.value = file.name.replace('.csv', '').replace(/[^a-zA-Z0-9_]/g, '_')
     }
 
-    // Reset references and keep-as-string when new file loaded
+    // Reset references and split-as-array when new file loaded
     references.value = []
-    keepAsString.value = new Set()
+    splitAsArray.value = new Set()
   }
   reader.readAsText(file)
 }
@@ -426,7 +427,7 @@ function removeFile() {
   csvRowCount.value = 0
   checkResult.value = null
   references.value = []
-  keepAsString.value = new Set()
+  splitAsArray.value = new Set()
 }
 
 // ─── Check DB ─────────────────────────────────────────────────────────────────
@@ -469,7 +470,7 @@ async function startImport() {
     refField: r.refField,
     storeField: r.storeField,
   }))))
-  formData.append('keepAsString', JSON.stringify(Array.from(keepAsString.value)))
+  formData.append('splitAsArray', JSON.stringify(Array.from(splitAsArray.value)))
 
   try {
     const res: any = await $fetch('/api/db/import', {
@@ -512,7 +513,7 @@ function resetAll() {
   progress.value = { total: 0, imported: 0, percentage: 0, batchesDone: 0, totalBatches: 0, message: '', fields: [], speed: 0, eta: 0, remainingRecords: 0, elapsed: 0 }
   checkResult.value = null
   references.value = []
-  keepAsString.value = new Set()
+  splitAsArray.value = new Set()
   availableCollections.value = []
   if (pollInterval) { clearInterval(pollInterval); pollInterval = null }
 }
@@ -997,25 +998,25 @@ const formatDuration = (ms: number) => {
                 :key="h"
                 variant="outline"
                 class="text-[10px] font-mono gap-1 px-2 py-0.5 transition-colors"
-                :class="referencedFields.has(h) ? 'border-amber-500/50 text-amber-500 bg-amber-500/5' : keepAsString.has(h) ? 'border-cyan-500/50 text-cyan-500 bg-cyan-500/5' : ''"
+                :class="referencedFields.has(h) ? 'border-amber-500/50 text-amber-500 bg-amber-500/5' : splitAsArray.has(h) ? 'border-emerald-500/50 text-emerald-500 bg-emerald-500/5' : ''"
               >
-                <Icon :name="referencedFields.has(h) ? 'i-lucide-link' : keepAsString.has(h) ? 'i-lucide-text' : 'i-lucide-type'" class="size-2.5" :class="referencedFields.has(h) ? 'text-amber-500' : keepAsString.has(h) ? 'text-cyan-500' : 'text-primary'" />
+                <Icon :name="referencedFields.has(h) ? 'i-lucide-link' : splitAsArray.has(h) ? 'i-lucide-list' : 'i-lucide-type'" class="size-2.5" :class="referencedFields.has(h) ? 'text-amber-500' : splitAsArray.has(h) ? 'text-emerald-500' : 'text-primary'" />
                 {{ h }}
-                <span v-if="keepAsString.has(h)" class="text-[8px] text-cyan-500/80 ml-0.5">STRING</span>
+                <span v-if="splitAsArray.has(h)" class="text-[8px] text-emerald-500/80 ml-0.5">ARRAY</span>
               </Badge>
             </div>
           </div>
 
           <!-- Comma-Separated Fields Toggle -->
-          <div v-if="commaFields.size > 0" class="mt-4 p-4 rounded-xl border border-cyan-500/20 bg-cyan-500/5">
+          <div v-if="commaFields.size > 0" class="mt-4 p-4 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
             <div class="flex items-center gap-2 mb-3">
-              <div class="flex items-center justify-center size-6 rounded-lg bg-cyan-500/15 text-cyan-500">
+              <div class="flex items-center justify-center size-6 rounded-lg bg-emerald-500/15 text-emerald-500">
                 <Icon name="i-lucide-split" class="size-3" />
               </div>
               <div>
                 <p class="text-xs font-semibold text-foreground">Comma-Separated Fields</p>
                 <p class="text-[10px] text-muted-foreground mt-0.5">
-                  These fields contain commas. Click to toggle between splitting into arrays or keeping as plain strings.
+                  These fields contain commas and will be kept as plain strings by default. Click to split into arrays.
                 </p>
               </div>
             </div>
@@ -1025,25 +1026,25 @@ const formatDuration = (ms: number) => {
                 :key="h"
                 type="button"
                 class="group flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-mono transition-all duration-200"
-                :class="keepAsString.has(h) 
-                  ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500/20' 
+                :class="splitAsArray.has(h) 
+                  ? 'border-emerald-500/50 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20' 
                   : 'border-border/60 bg-muted/30 text-foreground hover:bg-muted/60 hover:border-border'"
                 :disabled="isImporting"
-                @click="toggleKeepAsString(h)"
+                @click="toggleSplitAsArray(h)"
               >
                 <Icon 
-                  :name="keepAsString.has(h) ? 'i-lucide-text' : 'i-lucide-list'" 
+                  :name="splitAsArray.has(h) ? 'i-lucide-list' : 'i-lucide-text'" 
                   class="size-3 shrink-0 transition-colors"
-                  :class="keepAsString.has(h) ? 'text-cyan-500' : 'text-muted-foreground group-hover:text-primary'"
+                  :class="splitAsArray.has(h) ? 'text-emerald-500' : 'text-muted-foreground group-hover:text-primary'"
                 />
                 {{ h }}
                 <span 
                   class="text-[9px] font-sans px-1.5 py-0.5 rounded-full transition-colors"
-                  :class="keepAsString.has(h) 
-                    ? 'bg-cyan-500/20 text-cyan-400' 
-                    : 'bg-primary/10 text-primary/70'"
+                  :class="splitAsArray.has(h) 
+                    ? 'bg-emerald-500/20 text-emerald-400' 
+                    : 'bg-muted/40 text-muted-foreground'"
                 >
-                  {{ keepAsString.has(h) ? 'String' : 'Array' }}
+                  {{ splitAsArray.has(h) ? 'Array' : 'String' }}
                 </span>
               </button>
             </div>
@@ -1312,20 +1313,20 @@ const formatDuration = (ms: number) => {
           </div>
         </div>
 
-        <!-- Keep-as-string summary -->
-        <div v-if="keepAsString.size > 0" class="mt-4 p-3 rounded-lg bg-cyan-500/5 border border-cyan-500/20">
-          <p class="text-[11px] font-semibold text-cyan-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-            <Icon name="i-lucide-text" class="size-3" />
-            Keep as String ({{ keepAsString.size }})
+        <!-- Split-as-array summary -->
+        <div v-if="splitAsArray.size > 0" class="mt-4 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+          <p class="text-[11px] font-semibold text-emerald-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+            <Icon name="i-lucide-list" class="size-3" />
+            Split as Array ({{ splitAsArray.size }})
           </p>
           <div class="flex flex-wrap gap-1.5">
             <Badge
-              v-for="field in Array.from(keepAsString)"
+              v-for="field in Array.from(splitAsArray)"
               :key="field"
               variant="outline"
-              class="text-[10px] font-mono gap-1 border-cyan-500/40 text-cyan-500 bg-cyan-500/5"
+              class="text-[10px] font-mono gap-1 border-emerald-500/40 text-emerald-500 bg-emerald-500/5"
             >
-              <Icon name="i-lucide-text" class="size-2.5" />
+              <Icon name="i-lucide-list" class="size-2.5" />
               {{ field }}
             </Badge>
           </div>
