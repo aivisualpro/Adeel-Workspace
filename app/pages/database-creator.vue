@@ -186,6 +186,34 @@ const references = ref<ReferenceConfig[]>([])
 const availableCollections = ref<string[]>([])
 const loadingCollections = ref(false)
 
+// ─── Keep-as-String Fields ────────────────────────────────────────────────────
+// Fields in this set will NOT be auto-split into arrays when they contain commas
+const keepAsString = ref<Set<string>>(new Set())
+
+function toggleKeepAsString(field: string) {
+  const next = new Set(keepAsString.value)
+  if (next.has(field)) next.delete(field)
+  else next.add(field)
+  keepAsString.value = next
+}
+
+// Auto-detect which CSV fields contain commas (potential array candidates)
+const commaFields = computed(() => {
+  if (!csvPreviewRows.value.length || !csvPreviewHeaders.value.length) return new Set<string>()
+  const result = new Set<string>()
+  for (const h of csvPreviewHeaders.value) {
+    for (const row of csvPreviewRows.value) {
+      const val = (row[h] || '').trim()
+      // Only count commas outside of brace-enclosed values
+      if (val.includes(',') && !val.startsWith('{')) {
+        result.add(h)
+        break
+      }
+    }
+  }
+  return result
+})
+
 function addReference() {
   references.value.push({
     id: nanoid(6),
@@ -230,7 +258,10 @@ async function onRefCollectionChange(ref: ReferenceConfig) {
     const res: any = await $fetch(
       `/api/db/fields?database=${encodeURIComponent(database.value.trim())}&collection=${encodeURIComponent(ref.collection)}&source=${encodeURIComponent(selectedSource.value)}`,
     )
-    ref.availableFields = res.fields || []
+    // Ensure _id is always available as a match field option
+    const fields = res.fields || []
+    if (!fields.includes('_id')) fields.unshift('_id')
+    ref.availableFields = fields
   }
   catch (e: any) {
     ref.error = 'Could not load fields'
@@ -333,8 +364,9 @@ function processFile(file: File) {
       collection.value = file.name.replace('.csv', '').replace(/[^a-zA-Z0-9_]/g, '_')
     }
 
-    // Reset references when new file loaded
+    // Reset references and keep-as-string when new file loaded
     references.value = []
+    keepAsString.value = new Set()
   }
   reader.readAsText(file)
 }
@@ -394,6 +426,7 @@ function removeFile() {
   csvRowCount.value = 0
   checkResult.value = null
   references.value = []
+  keepAsString.value = new Set()
 }
 
 // ─── Check DB ─────────────────────────────────────────────────────────────────
@@ -436,6 +469,7 @@ async function startImport() {
     refField: r.refField,
     storeField: r.storeField,
   }))))
+  formData.append('keepAsString', JSON.stringify(Array.from(keepAsString.value)))
 
   try {
     const res: any = await $fetch('/api/db/import', {
@@ -478,6 +512,7 @@ function resetAll() {
   progress.value = { total: 0, imported: 0, percentage: 0, batchesDone: 0, totalBatches: 0, message: '', fields: [], speed: 0, eta: 0, remainingRecords: 0, elapsed: 0 }
   checkResult.value = null
   references.value = []
+  keepAsString.value = new Set()
   availableCollections.value = []
   if (pollInterval) { clearInterval(pollInterval); pollInterval = null }
 }
@@ -962,11 +997,55 @@ const formatDuration = (ms: number) => {
                 :key="h"
                 variant="outline"
                 class="text-[10px] font-mono gap-1 px-2 py-0.5 transition-colors"
-                :class="referencedFields.has(h) ? 'border-amber-500/50 text-amber-500 bg-amber-500/5' : ''"
+                :class="referencedFields.has(h) ? 'border-amber-500/50 text-amber-500 bg-amber-500/5' : keepAsString.has(h) ? 'border-cyan-500/50 text-cyan-500 bg-cyan-500/5' : ''"
               >
-                <Icon :name="referencedFields.has(h) ? 'i-lucide-link' : 'i-lucide-type'" class="size-2.5" :class="referencedFields.has(h) ? 'text-amber-500' : 'text-primary'" />
+                <Icon :name="referencedFields.has(h) ? 'i-lucide-link' : keepAsString.has(h) ? 'i-lucide-text' : 'i-lucide-type'" class="size-2.5" :class="referencedFields.has(h) ? 'text-amber-500' : keepAsString.has(h) ? 'text-cyan-500' : 'text-primary'" />
                 {{ h }}
+                <span v-if="keepAsString.has(h)" class="text-[8px] text-cyan-500/80 ml-0.5">STRING</span>
               </Badge>
+            </div>
+          </div>
+
+          <!-- Comma-Separated Fields Toggle -->
+          <div v-if="commaFields.size > 0" class="mt-4 p-4 rounded-xl border border-cyan-500/20 bg-cyan-500/5">
+            <div class="flex items-center gap-2 mb-3">
+              <div class="flex items-center justify-center size-6 rounded-lg bg-cyan-500/15 text-cyan-500">
+                <Icon name="i-lucide-split" class="size-3" />
+              </div>
+              <div>
+                <p class="text-xs font-semibold text-foreground">Comma-Separated Fields</p>
+                <p class="text-[10px] text-muted-foreground mt-0.5">
+                  These fields contain commas. Click to toggle between splitting into arrays or keeping as plain strings.
+                </p>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="h in Array.from(commaFields)"
+                :key="h"
+                type="button"
+                class="group flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-mono transition-all duration-200"
+                :class="keepAsString.has(h) 
+                  ? 'border-cyan-500/50 bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500/20' 
+                  : 'border-border/60 bg-muted/30 text-foreground hover:bg-muted/60 hover:border-border'"
+                :disabled="isImporting"
+                @click="toggleKeepAsString(h)"
+              >
+                <Icon 
+                  :name="keepAsString.has(h) ? 'i-lucide-text' : 'i-lucide-list'" 
+                  class="size-3 shrink-0 transition-colors"
+                  :class="keepAsString.has(h) ? 'text-cyan-500' : 'text-muted-foreground group-hover:text-primary'"
+                />
+                {{ h }}
+                <span 
+                  class="text-[9px] font-sans px-1.5 py-0.5 rounded-full transition-colors"
+                  :class="keepAsString.has(h) 
+                    ? 'bg-cyan-500/20 text-cyan-400' 
+                    : 'bg-primary/10 text-primary/70'"
+                >
+                  {{ keepAsString.has(h) ? 'String' : 'Array' }}
+                </span>
+              </button>
             </div>
           </div>
         </div>
@@ -1230,6 +1309,25 @@ const formatDuration = (ms: number) => {
               <span class="text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">{{ ref.storeField }}</span>
               <span class="text-muted-foreground">(ObjectId)</span>
             </div>
+          </div>
+        </div>
+
+        <!-- Keep-as-string summary -->
+        <div v-if="keepAsString.size > 0" class="mt-4 p-3 rounded-lg bg-cyan-500/5 border border-cyan-500/20">
+          <p class="text-[11px] font-semibold text-cyan-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+            <Icon name="i-lucide-text" class="size-3" />
+            Keep as String ({{ keepAsString.size }})
+          </p>
+          <div class="flex flex-wrap gap-1.5">
+            <Badge
+              v-for="field in Array.from(keepAsString)"
+              :key="field"
+              variant="outline"
+              class="text-[10px] font-mono gap-1 border-cyan-500/40 text-cyan-500 bg-cyan-500/5"
+            >
+              <Icon name="i-lucide-text" class="size-2.5" />
+              {{ field }}
+            </Badge>
           </div>
         </div>
       </CardContent>

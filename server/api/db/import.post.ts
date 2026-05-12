@@ -188,6 +188,7 @@ export default defineEventHandler(async (event) => {
     let sessionId = ''
     let batchSize = 500
     let referencesJson = '[]'
+    let keepAsStringJson = '[]'
     let source = 'adeel'
 
     for (const field of formData) {
@@ -196,6 +197,7 @@ export default defineEventHandler(async (event) => {
         if (field.name === 'sessionId') sessionId = field.data.toString('utf-8')
         if (field.name === 'batchSize') batchSize = parseInt(field.data.toString('utf-8')) || 500
         if (field.name === 'references') referencesJson = field.data.toString('utf-8')
+        if (field.name === 'keepAsString') keepAsStringJson = field.data.toString('utf-8')
         if (field.name === 'source') source = field.data.toString('utf-8')
         if (field.name === 'file' && field.filename) {
             csvContent = field.data.toString('utf-8')
@@ -214,8 +216,20 @@ export default defineEventHandler(async (event) => {
         references = []
     }
 
+    let keepAsStringFields: Set<string>
+    try {
+        const parsed = JSON.parse(keepAsStringJson) as string[]
+        keepAsStringFields = new Set(parsed)
+    }
+    catch {
+        keepAsStringFields = new Set()
+    }
+
     console.log(`[Import] Source: "${source}", DB: "${database}", Collection: "${collection}"`)
     console.log(`[Import] References received:`, JSON.stringify(references, null, 2))
+    if (keepAsStringFields.size > 0) {
+        console.log(`[Import] Keep-as-string fields:`, Array.from(keepAsStringFields))
+    }
 
     // Initialize progress
     const progress: ImportProgress = {
@@ -258,7 +272,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Start async import
-    importInBackground(database, collection, rows, batchSize, sessionId, progress, references, source)
+    importInBackground(database, collection, rows, batchSize, sessionId, progress, references, source, keepAsStringFields)
 
     return { success: true, sessionId, total: rows.length, fields: headers }
 })
@@ -272,6 +286,7 @@ async function importInBackground(
     progress: ImportProgress,
     references: Reference[],
     source: string,
+    keepAsStringFields: Set<string>,
 ) {
     try {
         const client = await getMongoClient(source)
@@ -288,25 +303,37 @@ async function importInBackground(
 
             for (const ref of references) {
                 const refCol = db.collection(ref.collection)
-                // Fetch all docs from reference collection (field + _id only)
-                const refDocs = await refCol.find(
-                    {},
-                    { projection: { _id: 1, [ref.refField]: 1 } },
-                ).toArray()
 
-                console.log(`[RefLookup] Collection "${ref.collection}" → fetched ${refDocs.length} docs, matching field: "${ref.refField}"`)
+                // If the match field is _id, we need to build lookup from _id strings
+                const isIdField = ref.refField === '_id'
+
+                // Fetch all docs from reference collection (field + _id only)
+                const projection: Record<string, number> = { _id: 1 }
+                if (!isIdField) projection[ref.refField] = 1
+
+                const refDocs = await refCol.find({}, { projection }).toArray()
+
+                console.log(`[RefLookup] Collection "${ref.collection}" → fetched ${refDocs.length} docs, matching field: "${ref.refField}" (isIdField: ${isIdField})`)
 
                 const lookupMap: RefMap = new Map()
                 for (const doc of refDocs) {
-                    const rawVal = doc[ref.refField]
+                    const rawVal = isIdField ? doc._id : doc[ref.refField]
                     // Normalize: handle numbers, ObjectIds, and strings
                     const key = String(rawVal ?? '').trim()
-                    if (key) lookupMap.set(key.toLowerCase(), doc._id as ObjectId)
+                    if (key) {
+                        lookupMap.set(key.toLowerCase(), doc._id as ObjectId)
+                        // Also store the un-lowered version for exact matching
+                        lookupMap.set(key, doc._id as ObjectId)
+                    }
                 }
 
-                // Log sample keys for debugging
-                const sampleKeys = Array.from(lookupMap.keys()).slice(0, 5)
-                console.log(`[RefLookup] Built lookup map with ${lookupMap.size} keys. Sample keys:`, sampleKeys)
+                // Log sample keys and CSV values for debugging
+                const sampleKeys = Array.from(lookupMap.keys()).slice(0, 10)
+                console.log(`[RefLookup] Built lookup map with ${lookupMap.size} entries. Sample keys:`, sampleKeys)
+
+                // Log sample CSV values for this field
+                const sampleCSVValues = rows.slice(0, 5).map(r => r[ref.localField]).filter(Boolean)
+                console.log(`[RefLookup] Sample CSV values for "${ref.localField}":`, sampleCSVValues)
 
                 refMaps.set(ref.localField, lookupMap)
             }
@@ -385,7 +412,8 @@ async function importInBackground(
                             doc[key] = parseObjectArrayCell(val)
                         }
                         // Comma-separated list → array of coerced values
-                        else if (val.includes(',')) {
+                        // UNLESS the field is marked as keep-as-string
+                        else if (val.includes(',') && !keepAsStringFields.has(key)) {
                             const parts = val.split(',').map(p => p.trim()).filter(Boolean)
                             if (parts.length > 1) {
                                 doc[key] = parts.map(p => {
