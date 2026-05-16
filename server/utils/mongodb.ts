@@ -6,8 +6,8 @@ const connectionMap: Record<SourceKey, { envKey: string, label: string }> = {
     adeel: { envKey: 'NUXT_MONGODB_URI', label: 'Adeel' },
     streetsmart: { envKey: 'NUXT_STREETSMART_MONGODB_URI', label: 'Street Smart' },
     culturalgourmet: { envKey: 'NUXT_CULTURALGOURMET_MONGODB_URI', label: 'Cultural Gourmet' },
-    lagniappepro: { envKey: 'LAGNIAPPEPRO_MONGODB_URI', label: 'LagniappePRO' },
-    nashville: { envKey: 'NASHVILLE_MONGODB_URI', label: 'Nashville ClearBra' },
+    lagniappepro: { envKey: 'NUXT_LAGNIAPPEPRO_MONGODB_URI', label: 'LagniappePRO' },
+    nashville: { envKey: 'NUXT_NASHVILLE_MONGODB_URI', label: 'Nashville ClearBra' },
 }
 
 // Maintain separate client pools per source
