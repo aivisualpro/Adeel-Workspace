@@ -52,6 +52,14 @@ const sourceOptions: SourceOption[] = [
     gradient: 'from-rose-500 via-pink-500 to-fuchsia-500',
     accentColor: 'rose',
   },
+  {
+    key: 'nashville',
+    label: 'Nashville ClearBra',
+    description: 'Nashville ClearBra database cluster',
+    icon: 'i-lucide-shield-check',
+    gradient: 'from-purple-500 via-violet-500 to-indigo-500',
+    accentColor: 'purple',
+  },
 ]
 
 const selectedSource = ref<string>('adeel')
@@ -603,6 +611,7 @@ onUnmounted(stopPolling)
           'from-emerald-500 via-teal-500 to-cyan-500': activeSourceOption.accentColor === 'emerald',
           'from-orange-500 via-amber-500 to-yellow-500': activeSourceOption.accentColor === 'orange',
           'from-rose-500 via-pink-500 to-fuchsia-500': activeSourceOption.accentColor === 'rose',
+          'from-purple-500 via-violet-500 to-indigo-500': activeSourceOption.accentColor === 'purple',
         }"
       />
 
@@ -615,6 +624,7 @@ onUnmounted(stopPolling)
               'bg-emerald-500/10 text-emerald-500': activeSourceOption.accentColor === 'emerald',
               'bg-orange-500/10 text-orange-500': activeSourceOption.accentColor === 'orange',
               'bg-rose-500/10 text-rose-500': activeSourceOption.accentColor === 'rose',
+              'bg-purple-500/10 text-purple-500': activeSourceOption.accentColor === 'purple',
             }"
           >
             <Icon name="i-lucide-plug-zap" class="size-3.5" />
@@ -628,6 +638,7 @@ onUnmounted(stopPolling)
               'border-emerald-500/40 text-emerald-500 bg-emerald-500/5': activeSourceOption.accentColor === 'emerald',
               'border-orange-500/40 text-orange-500 bg-orange-500/5': activeSourceOption.accentColor === 'orange',
               'border-rose-500/40 text-rose-500 bg-rose-500/5': activeSourceOption.accentColor === 'rose',
+              'border-purple-500/40 text-purple-500 bg-purple-500/5': activeSourceOption.accentColor === 'purple',
             }"
           >
             <span class="relative flex size-1.5">
@@ -638,6 +649,7 @@ onUnmounted(stopPolling)
                   'bg-emerald-400': activeSourceOption.accentColor === 'emerald',
                   'bg-orange-400': activeSourceOption.accentColor === 'orange',
                   'bg-rose-400': activeSourceOption.accentColor === 'rose',
+                  'bg-purple-400': activeSourceOption.accentColor === 'purple',
                 }"
               />
               <span
@@ -647,6 +659,7 @@ onUnmounted(stopPolling)
                   'bg-emerald-500': activeSourceOption.accentColor === 'emerald',
                   'bg-orange-500': activeSourceOption.accentColor === 'orange',
                   'bg-rose-500': activeSourceOption.accentColor === 'rose',
+                  'bg-purple-500': activeSourceOption.accentColor === 'purple',
                 }"
               />
             </span>
@@ -669,6 +682,7 @@ onUnmounted(stopPolling)
                     'border-emerald-500/40 bg-emerald-500/5 hover:border-emerald-500/60': activeSourceOption.accentColor === 'emerald',
                     'border-orange-500/40 bg-orange-500/5 hover:border-orange-500/60': activeSourceOption.accentColor === 'orange',
                     'border-rose-500/40 bg-rose-500/5 hover:border-rose-500/60': activeSourceOption.accentColor === 'rose',
+                    'border-purple-500/40 bg-purple-500/5 hover:border-purple-500/60': activeSourceOption.accentColor === 'purple',
                   },
             ]"
             @click="toggleSourceDropdown"
@@ -681,6 +695,7 @@ onUnmounted(stopPolling)
                 'bg-emerald-500/15 text-emerald-500 ring-emerald-500/30': activeSourceOption.accentColor === 'emerald',
                 'bg-orange-500/15 text-orange-500 ring-orange-500/30': activeSourceOption.accentColor === 'orange',
                 'bg-rose-500/15 text-rose-500 ring-rose-500/30': activeSourceOption.accentColor === 'rose',
+                'bg-purple-500/15 text-purple-500 ring-purple-500/30': activeSourceOption.accentColor === 'purple',
               }"
             >
               <Icon :name="activeSourceOption.icon" class="size-5" />
@@ -695,6 +710,7 @@ onUnmounted(stopPolling)
                   'text-emerald-500': activeSourceOption.accentColor === 'emerald',
                   'text-orange-500': activeSourceOption.accentColor === 'orange',
                   'text-rose-500': activeSourceOption.accentColor === 'rose',
+                  'text-purple-500': activeSourceOption.accentColor === 'purple',
                 }"
               >
                 {{ activeSourceOption.label }}
@@ -711,6 +727,7 @@ onUnmounted(stopPolling)
                   'bg-emerald-500 text-white': activeSourceOption.accentColor === 'emerald',
                   'bg-orange-500 text-white': activeSourceOption.accentColor === 'orange',
                   'bg-rose-500 text-white': activeSourceOption.accentColor === 'rose',
+                  'bg-purple-500 text-white': activeSourceOption.accentColor === 'purple',
                 }"
               >
                 <Icon name="i-lucide-check" class="size-3" />
@@ -752,6 +769,7 @@ onUnmounted(stopPolling)
                             'bg-emerald-500/10': option.accentColor === 'emerald',
                             'bg-orange-500/10': option.accentColor === 'orange',
                             'bg-rose-500/10': option.accentColor === 'rose',
+                            'bg-purple-500/10': option.accentColor === 'purple',
                           }
                         : 'hover:bg-muted/60',
                     ]"
@@ -766,6 +784,7 @@ onUnmounted(stopPolling)
                               'bg-emerald-500/15 text-emerald-500 ring-1 ring-emerald-500/30': option.accentColor === 'emerald',
                               'bg-orange-500/15 text-orange-500 ring-1 ring-orange-500/30': option.accentColor === 'orange',
                               'bg-rose-500/15 text-rose-500 ring-1 ring-rose-500/30': option.accentColor === 'rose',
+                              'bg-purple-500/15 text-purple-500 ring-1 ring-purple-500/30': option.accentColor === 'purple',
                             }
                           : 'bg-muted/60 text-muted-foreground group-hover:bg-muted',
                       ]"
@@ -782,6 +801,7 @@ onUnmounted(stopPolling)
                                 'text-emerald-500': option.accentColor === 'emerald',
                                 'text-orange-500': option.accentColor === 'orange',
                                 'text-rose-500': option.accentColor === 'rose',
+                                'text-purple-500': option.accentColor === 'purple',
                               }
                             : 'text-foreground',
                         ]"
@@ -806,6 +826,7 @@ onUnmounted(stopPolling)
                           'bg-emerald-500 text-white': option.accentColor === 'emerald',
                           'bg-orange-500 text-white': option.accentColor === 'orange',
                           'bg-rose-500 text-white': option.accentColor === 'rose',
+                          'bg-purple-500 text-white': option.accentColor === 'purple',
                         }"
                       >
                         <Icon name="i-lucide-check" class="size-3" />
