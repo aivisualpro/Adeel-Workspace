@@ -7,6 +7,10 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     mongodbUri: 'mongodb://localhost:27017',
+    streetsmartMongodbUri: 'mongodb://localhost:27017',
+    culturalgourmetMongodbUri: 'mongodb://localhost:27017',
+    lagniappeproMongodbUri: 'mongodb://localhost:27017',
+    nashvilleMongodbUri: 'mongodb://localhost:27017',
   },
 
   watch: ['~/app.config.ts'],
