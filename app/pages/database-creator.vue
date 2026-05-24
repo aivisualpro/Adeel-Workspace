@@ -8,98 +8,34 @@ setHeader({
   description: 'Create databases, collections & import CSV data into MongoDB',
 })
 
-// ─── Connection Source ───────────────────────────────────────────────────────
-interface SourceOption {
-  key: string
-  label: string
-  description: string
-  icon: string
-  gradient: string
-  accentColor: string
-}
+// ─── Connection Source (shared composable) ──────────────────────────────────
+const {
+  sourceOptions,
+  selectedSource,
+  activeSourceOption,
+  sourceDropdownOpen,
+  sourceDropdownRef,
+  sourceBtnRef,
+  sourceDropdownStyle,
+  toggleSourceDropdown: _toggleDropdown,
+  selectSource,
+  addSource,
+  removeSource,
+  loadSources,
+} = useConnectionSources()
 
-const sourceOptions: SourceOption[] = [
-  {
-    key: 'adeel',
-    label: 'Adeel',
-    description: 'Primary database cluster',
-    icon: 'i-lucide-server',
-    gradient: 'from-blue-500 via-indigo-500 to-violet-500',
-    accentColor: 'blue',
-  },
-  {
-    key: 'streetsmart',
-    label: 'Street Smart',
-    description: 'Street Smart database cluster',
-    icon: 'i-lucide-map-pin',
-    gradient: 'from-emerald-500 via-teal-500 to-cyan-500',
-    accentColor: 'emerald',
-  },
-  {
-    key: 'culturalgourmet',
-    label: 'Cultural Gourmet',
-    description: 'Cultural Gourmet database cluster',
-    icon: 'i-lucide-chef-hat',
-    gradient: 'from-orange-500 via-amber-500 to-yellow-500',
-    accentColor: 'orange',
-  },
-  {
-    key: 'lagniappepro',
-    label: 'LagniappePRO',
-    description: 'LagniappePRO ERP database cluster',
-    icon: 'i-lucide-building-2',
-    gradient: 'from-rose-500 via-pink-500 to-fuchsia-500',
-    accentColor: 'rose',
-  },
-  {
-    key: 'nashville',
-    label: 'Nashville ClearBra',
-    description: 'Nashville ClearBra database cluster',
-    icon: 'i-lucide-shield-check',
-    gradient: 'from-purple-500 via-violet-500 to-indigo-500',
-    accentColor: 'purple',
-  },
-]
-
-const selectedSource = ref<string>('adeel')
-
-const activeSourceOption = computed(() =>
-  sourceOptions.find(s => s.key === selectedSource.value) || sourceOptions[0]!
-)
-
-const sourceDropdownOpen = ref(false)
-const sourceDropdownRef = ref<HTMLDivElement | null>(null)
-const sourceBtnRef = ref<HTMLButtonElement | null>(null)
-const sourceDropdownStyle = ref({ top: '0px', left: '0px', width: '0px' })
-
+// Wrap toggleDropdown to respect import lock
 function toggleSourceDropdown() {
   if (isImporting.value) return
-  // Calculate fixed position from button element
-  if (sourceBtnRef.value) {
-    const rect = sourceBtnRef.value.getBoundingClientRect()
-    sourceDropdownStyle.value = {
-      top: `${rect.bottom + 8}px`,
-      left: `${rect.left}px`,
-      width: `${rect.width}px`,
-    }
-  }
-  sourceDropdownOpen.value = !sourceDropdownOpen.value
+  _toggleDropdown()
 }
 
-function selectSource(key: string) {
-  selectedSource.value = key
-  sourceDropdownOpen.value = false
+// Add connection dialog
+const showAddDialog = ref(false)
+async function onConnectionAdded(_key: string) {
+  showAddDialog.value = false
+  await loadSources()
 }
-
-// Close dropdown on outside click
-function onSourceClickOutside(e: MouseEvent) {
-  if (sourceDropdownRef.value && !sourceDropdownRef.value.contains(e.target as Node)) {
-    sourceDropdownOpen.value = false
-  }
-}
-
-onMounted(() => document.addEventListener('click', onSourceClickOutside))
-onUnmounted(() => document.removeEventListener('click', onSourceClickOutside))
 
 // Reset dependent state when source changes
 watch(selectedSource, () => {
@@ -546,30 +482,18 @@ const formatDuration = (ms: number) => {
   <div class="flex flex-col gap-6 max-w-5xl mx-auto pb-12">
 
     <!-- ═══ CONNECTION SOURCE ═════════════════════════════════════════════════ -->
-    <Card class="relative border-border/50 bg-card/80 backdrop-blur-sm">
+    <Card v-if="activeSourceOption" class="relative border-border/50 bg-card/80 backdrop-blur-sm" :style="{ '--accent': activeSourceOption.color }">
       <!-- Animated gradient top bar -->
       <div
-        class="absolute top-0 left-0 w-full h-1 rounded-t-xl bg-gradient-to-r transition-all duration-700 ease-out"
-        :class="{
-          'from-blue-500 via-indigo-500 to-violet-500': activeSourceOption.accentColor === 'blue',
-          'from-emerald-500 via-teal-500 to-cyan-500': activeSourceOption.accentColor === 'emerald',
-          'from-orange-500 via-amber-500 to-yellow-500': activeSourceOption.accentColor === 'orange',
-          'from-rose-500 via-pink-500 to-fuchsia-500': activeSourceOption.accentColor === 'rose',
-          'from-purple-500 via-violet-500 to-indigo-500': activeSourceOption.accentColor === 'purple',
-        }"
+        class="absolute top-0 left-0 w-full h-1 rounded-t-xl transition-all duration-700 ease-out"
+        :style="{ background: `linear-gradient(to right, hsl(${activeSourceOption.color}), hsl(${activeSourceOption.color} / 0.6))` }"
       />
 
       <CardHeader class="pb-3">
         <CardTitle class="flex items-center gap-2 text-sm font-semibold">
           <div
             class="flex items-center justify-center size-7 rounded-lg transition-colors duration-300"
-            :class="{
-              'bg-blue-500/10 text-blue-500': activeSourceOption.accentColor === 'blue',
-              'bg-emerald-500/10 text-emerald-500': activeSourceOption.accentColor === 'emerald',
-              'bg-orange-500/10 text-orange-500': activeSourceOption.accentColor === 'orange',
-              'bg-rose-500/10 text-rose-500': activeSourceOption.accentColor === 'rose',
-              'bg-purple-500/10 text-purple-500': activeSourceOption.accentColor === 'purple',
-            }"
+            :style="{ background: `hsl(${activeSourceOption.color} / 0.1)`, color: `hsl(${activeSourceOption.color})` }"
           >
             <Icon name="i-lucide-plug-zap" class="size-3.5" />
           </div>
@@ -577,34 +501,20 @@ const formatDuration = (ms: number) => {
           <Badge
             variant="outline"
             class="ml-auto text-[10px] gap-1.5 font-medium transition-all duration-300"
-            :class="{
-              'border-blue-500/40 text-blue-500 bg-blue-500/5': activeSourceOption.accentColor === 'blue',
-              'border-emerald-500/40 text-emerald-500 bg-emerald-500/5': activeSourceOption.accentColor === 'emerald',
-              'border-orange-500/40 text-orange-500 bg-orange-500/5': activeSourceOption.accentColor === 'orange',
-              'border-rose-500/40 text-rose-500 bg-rose-500/5': activeSourceOption.accentColor === 'rose',
-              'border-purple-500/40 text-purple-500 bg-purple-500/5': activeSourceOption.accentColor === 'purple',
+            :style="{
+              borderColor: `hsl(${activeSourceOption.color} / 0.4)`,
+              color: `hsl(${activeSourceOption.color})`,
+              background: `hsl(${activeSourceOption.color} / 0.05)`,
             }"
           >
             <span class="relative flex size-1.5">
               <span
                 class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
-                :class="{
-                  'bg-blue-400': activeSourceOption.accentColor === 'blue',
-                  'bg-emerald-400': activeSourceOption.accentColor === 'emerald',
-                  'bg-orange-400': activeSourceOption.accentColor === 'orange',
-                  'bg-rose-400': activeSourceOption.accentColor === 'rose',
-                  'bg-purple-400': activeSourceOption.accentColor === 'purple',
-                }"
+                :style="{ background: `hsl(${activeSourceOption.color} / 0.8)` }"
               />
               <span
                 class="relative inline-flex rounded-full size-1.5"
-                :class="{
-                  'bg-blue-500': activeSourceOption.accentColor === 'blue',
-                  'bg-emerald-500': activeSourceOption.accentColor === 'emerald',
-                  'bg-orange-500': activeSourceOption.accentColor === 'orange',
-                  'bg-rose-500': activeSourceOption.accentColor === 'rose',
-                  'bg-purple-500': activeSourceOption.accentColor === 'purple',
-                }"
+                :style="{ background: `hsl(${activeSourceOption.color})` }"
               />
             </span>
             Connected
@@ -623,26 +533,22 @@ const formatDuration = (ms: number) => {
             :class="[
               sourceDropdownOpen
                 ? 'border-primary/60 bg-muted/30 shadow-lg'
-                : {
-                    'border-blue-500/40 bg-blue-500/5 hover:border-blue-500/60': activeSourceOption.accentColor === 'blue',
-                    'border-emerald-500/40 bg-emerald-500/5 hover:border-emerald-500/60': activeSourceOption.accentColor === 'emerald',
-                    'border-orange-500/40 bg-orange-500/5 hover:border-orange-500/60': activeSourceOption.accentColor === 'orange',
-                    'border-rose-500/40 bg-rose-500/5 hover:border-rose-500/60': activeSourceOption.accentColor === 'rose',
-                    'border-purple-500/40 bg-purple-500/5 hover:border-purple-500/60': activeSourceOption.accentColor === 'purple',
-                  },
+                : '',
               isImporting ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
             ]"
+            :style="sourceDropdownOpen ? {} : {
+              borderColor: `hsl(${activeSourceOption.color} / 0.4)`,
+              background: `hsl(${activeSourceOption.color} / 0.05)`,
+            }"
             @click="toggleSourceDropdown"
           >
             <!-- Selected source icon -->
             <div
-              class="flex items-center justify-center size-10 rounded-xl shrink-0 transition-all duration-300 ring-1"
-              :class="{
-                'bg-blue-500/15 text-blue-500 ring-blue-500/30': activeSourceOption.accentColor === 'blue',
-                'bg-emerald-500/15 text-emerald-500 ring-emerald-500/30': activeSourceOption.accentColor === 'emerald',
-                'bg-orange-500/15 text-orange-500 ring-orange-500/30': activeSourceOption.accentColor === 'orange',
-                'bg-rose-500/15 text-rose-500 ring-rose-500/30': activeSourceOption.accentColor === 'rose',
-                'bg-purple-500/15 text-purple-500 ring-purple-500/30': activeSourceOption.accentColor === 'purple',
+              class="flex items-center justify-center size-10 rounded-xl shrink-0 transition-all duration-300"
+              :style="{
+                background: `hsl(${activeSourceOption.color} / 0.15)`,
+                color: `hsl(${activeSourceOption.color})`,
+                boxShadow: `inset 0 0 0 1px hsl(${activeSourceOption.color} / 0.3)`,
               }"
             >
               <Icon :name="activeSourceOption.icon" class="size-5" />
@@ -652,13 +558,7 @@ const formatDuration = (ms: number) => {
             <div class="flex-1 min-w-0">
               <p
                 class="text-sm font-semibold transition-colors duration-300"
-                :class="{
-                  'text-blue-500': activeSourceOption.accentColor === 'blue',
-                  'text-emerald-500': activeSourceOption.accentColor === 'emerald',
-                  'text-orange-500': activeSourceOption.accentColor === 'orange',
-                  'text-rose-500': activeSourceOption.accentColor === 'rose',
-                  'text-purple-500': activeSourceOption.accentColor === 'purple',
-                }"
+                :style="{ color: `hsl(${activeSourceOption.color})` }"
               >
                 {{ activeSourceOption.label }}
               </p>
@@ -668,14 +568,8 @@ const formatDuration = (ms: number) => {
             <!-- Chevron -->
             <div class="flex items-center gap-2">
               <div
-                class="flex items-center justify-center size-5 rounded-full"
-                :class="{
-                  'bg-blue-500 text-white': activeSourceOption.accentColor === 'blue',
-                  'bg-emerald-500 text-white': activeSourceOption.accentColor === 'emerald',
-                  'bg-orange-500 text-white': activeSourceOption.accentColor === 'orange',
-                  'bg-rose-500 text-white': activeSourceOption.accentColor === 'rose',
-                  'bg-purple-500 text-white': activeSourceOption.accentColor === 'purple',
-                }"
+                class="flex items-center justify-center size-5 rounded-full text-white"
+                :style="{ background: `hsl(${activeSourceOption.color})` }"
               >
                 <Icon name="i-lucide-check" class="size-3" />
               </div>
@@ -709,33 +603,21 @@ const formatDuration = (ms: number) => {
                   :key="option.key"
                   type="button"
                   class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 group"
-                  :class="[
-                    selectedSource === option.key
-                      ? {
-                          'bg-blue-500/10': option.accentColor === 'blue',
-                          'bg-emerald-500/10': option.accentColor === 'emerald',
-                          'bg-orange-500/10': option.accentColor === 'orange',
-                          'bg-rose-500/10': option.accentColor === 'rose',
-                          'bg-purple-500/10': option.accentColor === 'purple',
-                        }
-                      : 'hover:bg-muted/60',
-                  ]"
+                  :style="selectedSource === option.key ? { background: `hsl(${option.color} / 0.1)` } : {}"
+                  :class="selectedSource !== option.key ? 'hover:bg-muted/60' : ''"
                   @click="selectSource(option.key)"
                 >
                   <!-- Source icon -->
                   <div
                     class="flex items-center justify-center size-9 rounded-lg shrink-0 transition-all duration-200"
-                    :class="[
-                      selectedSource === option.key
-                        ? {
-                            'bg-blue-500/15 text-blue-500 ring-1 ring-blue-500/30': option.accentColor === 'blue',
-                            'bg-emerald-500/15 text-emerald-500 ring-1 ring-emerald-500/30': option.accentColor === 'emerald',
-                            'bg-orange-500/15 text-orange-500 ring-1 ring-orange-500/30': option.accentColor === 'orange',
-                            'bg-rose-500/15 text-rose-500 ring-1 ring-rose-500/30': option.accentColor === 'rose',
-                            'bg-purple-500/15 text-purple-500 ring-1 ring-purple-500/30': option.accentColor === 'purple',
-                          }
-                        : 'bg-muted/60 text-muted-foreground group-hover:bg-muted',
-                    ]"
+                    :style="selectedSource === option.key
+                      ? {
+                          background: `hsl(${option.color} / 0.15)`,
+                          color: `hsl(${option.color})`,
+                          boxShadow: `inset 0 0 0 1px hsl(${option.color} / 0.3)`,
+                        }
+                      : {}"
+                    :class="selectedSource !== option.key ? 'bg-muted/60 text-muted-foreground group-hover:bg-muted' : ''"
                   >
                     <Icon :name="option.icon" class="size-4" />
                   </div>
@@ -744,22 +626,27 @@ const formatDuration = (ms: number) => {
                   <div class="flex-1 min-w-0">
                     <p
                       class="text-sm font-semibold transition-colors"
-                      :class="[
-                        selectedSource === option.key
-                          ? {
-                              'text-blue-500': option.accentColor === 'blue',
-                              'text-emerald-500': option.accentColor === 'emerald',
-                              'text-orange-500': option.accentColor === 'orange',
-                              'text-rose-500': option.accentColor === 'rose',
-                              'text-purple-500': option.accentColor === 'purple',
-                            }
-                          : 'text-foreground',
-                      ]"
+                      :style="selectedSource === option.key ? { color: `hsl(${option.color})` } : {}"
+                      :class="selectedSource !== option.key ? 'text-foreground' : ''"
                     >
                       {{ option.label }}
                     </p>
-                    <p class="text-[10px] text-muted-foreground truncate">{{ option.description }}</p>
+                    <p class="text-[10px] text-muted-foreground truncate">
+                      {{ option.description }}
+                      <span v-if="option.origin === 'custom'" class="ml-1 opacity-60">· custom</span>
+                    </p>
                   </div>
+
+                  <!-- Delete button for custom sources -->
+                  <button
+                    v-if="option.origin === 'custom'"
+                    type="button"
+                    class="flex items-center justify-center size-6 rounded-md text-muted-foreground hover:text-red-400 hover:bg-red-500/10 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
+                    title="Remove custom connection"
+                    @click.stop="removeSource(option.key)"
+                  >
+                    <Icon name="i-lucide-trash-2" class="size-3" />
+                  </button>
 
                   <!-- Check icon -->
                   <Transition
@@ -772,19 +659,30 @@ const formatDuration = (ms: number) => {
                   >
                     <div
                       v-if="selectedSource === option.key"
-                      class="flex items-center justify-center size-5 rounded-full shrink-0"
-                      :class="{
-                        'bg-blue-500 text-white': option.accentColor === 'blue',
-                        'bg-emerald-500 text-white': option.accentColor === 'emerald',
-                        'bg-orange-500 text-white': option.accentColor === 'orange',
-                        'bg-rose-500 text-white': option.accentColor === 'rose',
-                        'bg-purple-500 text-white': option.accentColor === 'purple',
-                      }"
+                      class="flex items-center justify-center size-5 rounded-full shrink-0 text-white"
+                      :style="{ background: `hsl(${option.color})` }"
                     >
                       <Icon name="i-lucide-check" class="size-3" />
                     </div>
                   </Transition>
                 </button>
+
+                <!-- Add Connection button -->
+                <div class="border-t border-border/30 mt-1 pt-1">
+                  <button
+                    type="button"
+                    class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 hover:bg-muted/60 group"
+                    @click="showAddDialog = true; sourceDropdownOpen = false"
+                  >
+                    <div class="flex items-center justify-center size-9 rounded-lg shrink-0 bg-muted/60 text-muted-foreground group-hover:bg-emerald-500/15 group-hover:text-emerald-500 transition-colors">
+                      <Icon name="i-lucide-plus" class="size-4" />
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-semibold text-muted-foreground group-hover:text-foreground transition-colors">Add Connection</p>
+                      <p class="text-[10px] text-muted-foreground truncate">Connect a new MongoDB cluster</p>
+                    </div>
+                  </button>
+                </div>
               </div>
             </div>
           </Transition>
@@ -792,6 +690,9 @@ const formatDuration = (ms: number) => {
         </div>
       </CardContent>
     </Card>
+
+    <!-- Add Connection Dialog -->
+    <AddConnectionDialog v-model:open="showAddDialog" @added="onConnectionAdded" />
 
     <!-- ═══ STEP 1: Database & Collection ════════════════════════════════════ -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

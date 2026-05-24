@@ -6,11 +6,8 @@ export default defineNuxtConfig({
   spaLoadingTemplate: false,
 
   runtimeConfig: {
-    mongodbUri: 'mongodb://localhost:27017',
-    streetsmartMongodbUri: 'mongodb://localhost:27017',
-    culturalgourmetMongodbUri: 'mongodb://localhost:27017',
-    lagniappeproMongodbUri: 'mongodb://localhost:27017',
-    nashvilleMongodbUri: 'mongodb://localhost:27017',
+    // MongoDB URIs are now auto-discovered from NUXT_*_MONGODB_URI env vars
+    // and custom connections stored in server/data/connections.json
   },
 
   watch: ['~/app.config.ts'],
