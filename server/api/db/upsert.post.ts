@@ -1,11 +1,13 @@
 import { getMongoClient } from '../../utils/mongodb'
-import { parseCSV, buildRefLookupMaps, buildDocument } from '../../utils/csv-utils'
+import { parseCSV, buildRefLookupMaps, buildDocument, coerceFieldValue } from '../../utils/csv-utils'
 import type { Reference } from '../../utils/csv-utils'
 
-interface ImportProgress {
+interface UpsertProgress {
     status: 'idle' | 'parsing' | 'importing' | 'done' | 'error'
     total: number
-    imported: number
+    inserted: number
+    updated: number
+    processed: number
     batchesDone: number
     totalBatches: number
     message: string
@@ -19,9 +21,9 @@ interface ImportProgress {
 }
 
 // In-memory progress store (keyed by a session id)
-const progressMap = new Map<string, ImportProgress>()
+const progressMap = new Map<string, UpsertProgress>()
 
-export function getProgress(sessionId: string): ImportProgress | undefined {
+export function getUpsertProgress(sessionId: string): UpsertProgress | undefined {
     return progressMap.get(sessionId)
 }
 
@@ -36,6 +38,7 @@ export default defineEventHandler(async (event) => {
     let csvContent = ''
     let sessionId = ''
     let batchSize = 500
+    let matchField = ''
     let referencesJson = '[]'
     let splitAsArrayJson = '[]'
     let source = 'adeel'
@@ -45,6 +48,7 @@ export default defineEventHandler(async (event) => {
         if (field.name === 'collection') collection = field.data.toString('utf-8')
         if (field.name === 'sessionId') sessionId = field.data.toString('utf-8')
         if (field.name === 'batchSize') batchSize = parseInt(field.data.toString('utf-8')) || 500
+        if (field.name === 'matchField') matchField = field.data.toString('utf-8')
         if (field.name === 'references') referencesJson = field.data.toString('utf-8')
         if (field.name === 'splitAsArray') splitAsArrayJson = field.data.toString('utf-8')
         if (field.name === 'source') source = field.data.toString('utf-8')
@@ -53,8 +57,8 @@ export default defineEventHandler(async (event) => {
         }
     }
 
-    if (!database || !collection || !csvContent || !sessionId) {
-        throw createError({ statusCode: 400, message: 'database, collection, sessionId, and file are required' })
+    if (!database || !collection || !csvContent || !sessionId || !matchField) {
+        throw createError({ statusCode: 400, message: 'database, collection, sessionId, matchField, and file are required' })
     }
 
     let references: Reference[] = []
@@ -74,17 +78,19 @@ export default defineEventHandler(async (event) => {
         splitAsArrayFields = new Set()
     }
 
-    console.log(`[Import] Source: "${source}", DB: "${database}", Collection: "${collection}"`)
-    console.log(`[Import] References received:`, JSON.stringify(references, null, 2))
+    console.log(`[Upsert] Source: "${source}", DB: "${database}", Collection: "${collection}", Match: "${matchField}"`)
+    console.log(`[Upsert] References received:`, JSON.stringify(references, null, 2))
     if (splitAsArrayFields.size > 0) {
-        console.log(`[Import] Split-as-array fields:`, Array.from(splitAsArrayFields))
+        console.log(`[Upsert] Split-as-array fields:`, Array.from(splitAsArrayFields))
     }
 
     // Initialize progress
-    const progress: ImportProgress = {
+    const progress: UpsertProgress = {
         status: 'parsing',
         total: 0,
-        imported: 0,
+        inserted: 0,
+        updated: 0,
+        processed: 0,
         batchesDone: 0,
         totalBatches: 0,
         message: 'Parsing CSV...',
@@ -105,37 +111,29 @@ export default defineEventHandler(async (event) => {
     progress.totalBatches = Math.ceil(rows.length / batchSize)
     progress.message = `Parsed ${rows.length.toLocaleString()} records with ${headers.length} fields`
 
-    // Log reference field diagnostics
-    if (references.length > 0 && rows.length > 0) {
-        for (const ref of references) {
-            const nonEmpty = rows.filter(r => (r[ref.localField] ?? '').trim() !== '')
-            const firstNonEmpty = nonEmpty.length > 0 ? nonEmpty[0]![ref.localField] : '<ALL EMPTY>'
-            console.log(`[Import] CSV field "${ref.localField}": ${nonEmpty.length} of ${rows.length} rows have values. First non-empty: "${firstNonEmpty}"`)
-        }
-    }
-
     if (rows.length === 0) {
         progress.status = 'done'
-        progress.message = 'CSV is empty — nothing to import'
+        progress.message = 'CSV is empty — nothing to upsert'
         return { success: true, sessionId }
     }
 
-    // Start async import
-    importInBackground(database, collection, rows, batchSize, sessionId, progress, references, source, splitAsArrayFields)
+    // Start async upsert
+    upsertInBackground(database, collection, rows, batchSize, sessionId, progress, references, source, splitAsArrayFields, matchField)
 
     return { success: true, sessionId, total: rows.length, fields: headers }
 })
 
-async function importInBackground(
+async function upsertInBackground(
     database: string,
     collection: string,
     rows: Record<string, string>[],
     batchSize: number,
     sessionId: string,
-    progress: ImportProgress,
+    progress: UpsertProgress,
     references: Reference[],
     source: string,
     splitAsArrayFields: Set<string>,
+    matchField: string,
 ) {
     try {
         const client = await getMongoClient(source)
@@ -150,7 +148,7 @@ async function importInBackground(
         }
 
         progress.status = 'importing'
-        progress.message = 'Importing records...'
+        progress.message = 'Upserting records...'
 
         // Track reference resolution stats
         const refStats: Record<string, { hit: number, miss: number, empty: number }> = {}
@@ -162,20 +160,57 @@ async function importInBackground(
         for (let i = 0; i < rows.length; i += batchSize) {
             const batch = rows.slice(i, i + batchSize)
 
-            const documents = batch.map((row) =>
-                buildDocument(row, references, refMaps, refStats, splitAsArrayFields),
-            )
+            // Build bulk operations
+            const bulkOps = batch.map((row) => {
+                const doc = buildDocument(row, references, refMaps, refStats, splitAsArrayFields)
 
-            await col.insertMany(documents, { ordered: false })
+                // Determine the match value for the filter
+                // The match field might be a reference (storeField) or a normal field
+                const ref = references.find(r => r.localField === matchField)
+                let filterValue: any
 
-            progress.imported += batch.length
+                if (ref) {
+                    // If the match field is a reference, use the resolved ObjectId
+                    filterValue = doc[ref.storeField]
+                }
+                else {
+                    // Use the coerced value of the match field
+                    filterValue = doc[matchField]
+                }
+
+                // Build the filter
+                const filterField = ref ? ref.storeField : matchField
+                const filter = { [filterField]: filterValue }
+
+                // Build the $set document (all fields except the filter field itself)
+                const setDoc = { ...doc }
+
+                return {
+                    updateOne: {
+                        filter,
+                        update: { $set: setDoc },
+                        upsert: true,
+                    },
+                }
+            })
+
+            const result = await col.bulkWrite(bulkOps, { ordered: false })
+
+            const batchInserted = result.upsertedCount || 0
+            const batchUpdated = (result.modifiedCount || 0) + (result.matchedCount || 0) - (result.modifiedCount || 0) > 0
+                ? result.modifiedCount || 0
+                : result.matchedCount || 0
+
+            progress.inserted += batchInserted
+            progress.updated += batchUpdated
+            progress.processed += batch.length
             progress.batchesDone += 1
             progress.elapsed = Date.now() - progress.startTime
-            progress.percentage = Math.round((progress.imported / progress.total) * 100)
-            progress.remainingRecords = progress.total - progress.imported
-            progress.speed = progress.elapsed > 0 ? Math.round((progress.imported / progress.elapsed) * 1000) : 0
+            progress.percentage = Math.round((progress.processed / progress.total) * 100)
+            progress.remainingRecords = progress.total - progress.processed
+            progress.speed = progress.elapsed > 0 ? Math.round((progress.processed / progress.elapsed) * 1000) : 0
             progress.eta = progress.speed > 0 ? Math.round(progress.remainingRecords / progress.speed) : 0
-            progress.message = `Imported ${progress.imported.toLocaleString()} of ${progress.total.toLocaleString()} records (batch ${progress.batchesDone}/${progress.totalBatches})`
+            progress.message = `Processed ${progress.processed.toLocaleString()} of ${progress.total.toLocaleString()} — ${progress.inserted} inserted, ${progress.updated} updated (batch ${progress.batchesDone}/${progress.totalBatches})`
         }
 
         // Log reference resolution summary
@@ -187,12 +222,12 @@ async function importInBackground(
         progress.percentage = 100
         progress.elapsed = Date.now() - progress.startTime
         progress.remainingRecords = 0
-        progress.message = `✅ Successfully imported ${progress.total.toLocaleString()} records in ${(progress.elapsed / 1000).toFixed(1)}s`
+        progress.message = `✅ Upsert complete — ${progress.inserted.toLocaleString()} inserted, ${progress.updated.toLocaleString()} updated in ${(progress.elapsed / 1000).toFixed(1)}s`
     }
     catch (err: any) {
         progress.status = 'error'
         progress.elapsed = Date.now() - progress.startTime
-        progress.message = `❌ Import failed: ${err.message}`
+        progress.message = `❌ Upsert failed: ${err.message}`
     }
 
     // Clean up progress after 5 minutes

@@ -18,6 +18,12 @@ export const navMenu: NavMenu[] = [
         link: '/database-creator',
       },
       {
+        title: 'Collection Updator',
+        titleKey: 'nav.collectionUpdator',
+        icon: 'i-lucide-refresh-cw',
+        link: '/collection-updator',
+      },
+      {
         title: 'Array Embedder',
         titleKey: 'nav.arrayEmbedder',
         icon: 'i-lucide-list-plus',
