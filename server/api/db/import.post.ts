@@ -84,6 +84,117 @@ function parseObjectArrayCell(val: string): Record<string, any>[] | null {
     return results.length > 0 ? results : null
 }
 
+/**
+ * Parse a string that looks like a date/time into a UTC Date object.
+ * Returns a Date built with Date.UTC() so the literal values are preserved
+ * with NO timezone shift — "2024-01-15 08:30" becomes ISODate("2024-01-15T08:30:00Z").
+ * Returns null if the value is not a recognisable date/time format.
+ *
+ * Covered formats:
+ *   ISO:       2024-01-15  |  2024-01-15T08:30:00  |  2024-01-15T08:30:00Z  |  2024-01-15T08:30:00+05:00
+ *   US/EU:     01/15/2024  |  1/5/2024  |  01.15.2024
+ *   Named:     15-Jan-2024  |  Jan 15, 2024  |  January 15, 2024
+ *   Datetime:  01/15/2024 08:30  |  2024-01-15 08:30:00  |  3/5/2025 10:30 AM
+ */
+const MONTH_MAP: Record<string, number> = {
+    jan: 0, january: 0, feb: 1, february: 1, mar: 2, march: 2,
+    apr: 3, april: 3, may: 4, jun: 5, june: 5, jul: 6, july: 6,
+    aug: 7, august: 7, sep: 8, sept: 8, september: 8,
+    oct: 9, october: 9, nov: 10, november: 10, dec: 11, december: 11,
+}
+
+function parseTimeComponents(timeStr: string): { h: number, m: number, s: number, ms: number } {
+    // Handles: 08:30  |  08:30:00  |  8:30 AM  |  10:30:00.123 PM
+    const t = timeStr.trim()
+    const isPM = /pm$/i.test(t)
+    const isAM = /am$/i.test(t)
+    const clean = t.replace(/\s*[AaPp][Mm]$/i, '')
+    const parts = clean.split(':')
+    let h = parseInt(parts[0]!) || 0
+    const m = parseInt(parts[1]!) || 0
+    const secParts = (parts[2] || '0').split('.')
+    const s = parseInt(secParts[0]!) || 0
+    const ms = parseInt((secParts[1] || '0').padEnd(3, '0').slice(0, 3)) || 0
+
+    if (isPM && h < 12) h += 12
+    if (isAM && h === 12) h = 0
+
+    return { h, m, s, ms }
+}
+
+function parseDateAsUTC(val: string): Date | null {
+    const v = val.trim()
+    if (!v) return null
+
+    let year: number, month: number, day: number
+    let h = 0, m = 0, s = 0, ms = 0
+
+    // ── 1. ISO format: 2024-01-15  |  2024-01-15T08:30:00  |  2024-01-15 08:30:00.123Z
+    //    We strip any trailing timezone (Z, +05:00) because we force UTC.
+    const isoRe = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ](\d{1,2}:\d{2}(?::\d{2}(?:\.\d+)?)?)(?:\s*[AaPp][Mm])?)?(?:Z|[+-]\d{2}:?\d{0,2})?$/i
+    let match = isoRe.exec(v)
+    if (match) {
+        year = parseInt(match[1]!)
+        month = parseInt(match[2]!) - 1
+        day = parseInt(match[3]!)
+        if (match[4]) {
+            // Reconstruct time portion including possible AM/PM from original value
+            const timeRaw = v.slice(v.indexOf(match[4]!)).replace(/Z$|[+-]\d{2}:?\d{0,2}$/i, '').trim()
+            const tc = parseTimeComponents(timeRaw)
+            h = tc.h; m = tc.m; s = tc.s; ms = tc.ms
+        }
+        if (month < 0 || month > 11 || day < 1 || day > 31) return null
+        return new Date(Date.UTC(year, month, day, h, m, s, ms))
+    }
+
+    // ── 2. US/EU with slashes or dots: 01/15/2024 | 1/5/24 | 01.15.2024  (+ optional time)
+    const slashRe = /^(\d{1,2})[/.](\d{1,2})[/.](\d{2,4})(?:\s+(\d{1,2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:\s*[AaPp][Mm])?))?$/i
+    match = slashRe.exec(v)
+    if (match) {
+        const a = parseInt(match[1]!)
+        const b = parseInt(match[2]!)
+        let yr = parseInt(match[3]!)
+        if (yr < 100) yr += 2000
+        // Treat as month/day/year (US style)
+        month = a - 1; day = b; year = yr
+        if (month < 0 || month > 11 || day < 1 || day > 31) return null
+        if (match[4]) { const tc = parseTimeComponents(match[4]); h = tc.h; m = tc.m; s = tc.s; ms = tc.ms }
+        return new Date(Date.UTC(year, month, day, h, m, s, ms))
+    }
+
+    // ── 3. Named month first: Jan 15, 2024  |  January 15 2024  (+ optional time)
+    const namedFirstRe = /^([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{2,4})(?:\s+(\d{1,2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:\s*[AaPp][Mm])?))?$/i
+    match = namedFirstRe.exec(v)
+    if (match) {
+        const mon = MONTH_MAP[match[1]!.toLowerCase()]
+        if (mon === undefined) return null
+        day = parseInt(match[2]!)
+        year = parseInt(match[3]!)
+        if (year < 100) year += 2000
+        month = mon
+        if (day < 1 || day > 31) return null
+        if (match[4]) { const tc = parseTimeComponents(match[4]); h = tc.h; m = tc.m; s = tc.s; ms = tc.ms }
+        return new Date(Date.UTC(year, month, day, h, m, s, ms))
+    }
+
+    // ── 4. Day-named-month-year: 15-Jan-2024  |  15 January 2024  (+ optional time)
+    const dayNamedRe = /^(\d{1,2})[\s-]([A-Za-z]+)[\s-](\d{2,4})(?:\s+(\d{1,2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:\s*[AaPp][Mm])?))?$/i
+    match = dayNamedRe.exec(v)
+    if (match) {
+        day = parseInt(match[1]!)
+        const mon = MONTH_MAP[match[2]!.toLowerCase()]
+        if (mon === undefined) return null
+        year = parseInt(match[3]!)
+        if (year < 100) year += 2000
+        month = mon
+        if (day < 1 || day > 31) return null
+        if (match[4]) { const tc = parseTimeComponents(match[4]); h = tc.h; m = tc.m; s = tc.s; ms = tc.ms }
+        return new Date(Date.UTC(year, month, day, h, m, s, ms))
+    }
+
+    return null
+}
+
 function parseCSV(raw: string): { headers: string[], rows: Record<string, string>[] } {
     if (!raw.trim()) return { headers: [], rows: [] }
 
@@ -397,6 +508,13 @@ async function importInBackground(
                         }
                         else if (val.toLowerCase() === 'false') {
                             doc[key] = false
+                        }
+                        // ── Date / Time → MongoDB Date (timezone-safe) ─────────
+                        // Parsed via Date.UTC() so the literal CSV values are
+                        // stored exactly as-is with no local-timezone shift.
+                        // e.g. CSV "2024-01-15 08:30" → ISODate("2024-01-15T08:30:00Z")
+                        else if ((() => { const d = parseDateAsUTC(val); if (d) { doc[key] = d; return true } return false })()) {
+                            // already assigned inside the IIFE above
                         }
                         // Currency / formatted numbers: $478,541.06  -$1,234.56  1,234,567  €50,000
                         // Must be checked BEFORE plain number and comma-list to avoid splitting on thousand separators
