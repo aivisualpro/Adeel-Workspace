@@ -299,19 +299,19 @@ export function coerceFieldValue(val: string, key: string, splitAsArrayFields: S
     }
 
     // Comma-separated list → array (only if explicitly opted in)
-    if (val.includes(',') && splitAsArrayFields.has(key)) {
-        const parts = val.split(',').map(p => p.trim()).filter(Boolean)
-        if (parts.length > 1) {
-            return parts.map(p => {
-                if (p === 'Y' || p === 'y') return true
-                if (p === 'N' || p === 'n') return false
-                if (p.toLowerCase() === 'true') return true
-                if (p.toLowerCase() === 'false') return false
-                if (!isNaN(Number(p)) && p !== '') return Number(p)
-                return p
-            })
-        }
-        return parts[0] ?? val
+    if (splitAsArrayFields.has(key)) {
+        const parts = val.includes(',')
+            ? val.split(',').map(p => p.trim()).filter(Boolean)
+            : [val.trim()].filter(Boolean)
+        // Always return an array — even for single values — to keep the schema consistent
+        return parts.map(p => {
+            if (p === 'Y' || p === 'y') return true
+            if (p === 'N' || p === 'n') return false
+            if (p.toLowerCase() === 'true') return true
+            if (p.toLowerCase() === 'false') return false
+            if (!isNaN(Number(p)) && p !== '') return Number(p)
+            return p
+        })
     }
 
     return val
@@ -320,7 +320,8 @@ export function coerceFieldValue(val: string, key: string, splitAsArrayFields: S
 // ─── Reference Resolution ─────────────────────────────────────────────────────
 /**
  * Resolve a CSV field value (single or comma-separated) against a lookup map.
- * Returns a single ObjectId, an array of ObjectIds, or null.
+ * When `forceArray` is true, even single values are wrapped in an ObjectId[]
+ * to keep the schema consistent across all documents.
  */
 export function resolveReference(
     val: string,
@@ -328,12 +329,15 @@ export function resolveReference(
     lookupMap: RefMap | undefined,
     refStats: Record<string, { hit: number, miss: number, empty: number }>,
     key: string,
+    forceArray: boolean = false,
 ): { storeField: string, value: ObjectId | ObjectId[] | null } {
     const rawVal = val.trim()
 
     // ── Multi-value: comma-separated list → array of ObjectIds ──
-    if (rawVal.includes(',')) {
-        const parts = rawVal.split(',').map(p => p.trim()).filter(Boolean)
+    if (rawVal.includes(',') || forceArray) {
+        const parts = rawVal.includes(',')
+            ? rawVal.split(',').map(p => p.trim()).filter(Boolean)
+            : [rawVal].filter(Boolean)
         const objectIds: ObjectId[] = []
 
         for (const part of parts) {
@@ -356,7 +360,7 @@ export function resolveReference(
         return { storeField: ref.storeField, value: objectIds }
     }
 
-    // ── Single-value: one value → single ObjectId ───────────
+    // ── Single-value (forceArray=false): one value → single ObjectId ───────────
     const lookupKey = rawVal.toLowerCase()
     const objectId = lookupMap?.get(lookupKey) ?? null
 
@@ -414,6 +418,32 @@ export async function buildRefLookupMaps(
     return refMaps
 }
 
+// ─── Detect Array Reference Fields ────────────────────────────────────────────
+/**
+ * Pre-scan all rows to detect which reference fields have ANY comma-separated
+ * values. If even one record has commas, ALL records for that field should
+ * produce an array of ObjectIds for schema consistency.
+ */
+export function detectArrayRefFields(
+    rows: Record<string, string>[],
+    references: Reference[],
+): Set<string> {
+    const arrayRefFields = new Set<string>()
+    for (const ref of references) {
+        for (const row of rows) {
+            const val = (row[ref.localField] ?? '').trim()
+            if (val.includes(',')) {
+                arrayRefFields.add(ref.localField)
+                break // one match is enough for this field
+            }
+        }
+    }
+    if (arrayRefFields.size > 0) {
+        console.log(`[RefLookup] Array reference fields (will force ObjectId[] for all records):`, Array.from(arrayRefFields))
+    }
+    return arrayRefFields
+}
+
 // ─── Build Document from CSV Row ──────────────────────────────────────────────
 /**
  * Convert a raw CSV row into a MongoDB document, applying type coercion
@@ -425,6 +455,7 @@ export function buildDocument(
     refMaps: Map<string, RefMap>,
     refStats: Record<string, { hit: number, miss: number, empty: number }>,
     splitAsArrayFields: Set<string>,
+    arrayRefFields: Set<string> = new Set(),
 ): Record<string, any> {
     const doc: Record<string, any> = {}
 
@@ -433,7 +464,8 @@ export function buildDocument(
 
         if (ref) {
             const lookupMap = refMaps.get(key)
-            const resolved = resolveReference(val, ref, lookupMap, refStats, key)
+            const forceArray = arrayRefFields.has(key)
+            const resolved = resolveReference(val, ref, lookupMap, refStats, key, forceArray)
             doc[resolved.storeField] = resolved.value
         }
         else {

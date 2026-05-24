@@ -1,5 +1,5 @@
 import { getMongoClient } from '../../utils/mongodb'
-import { parseCSV, buildRefLookupMaps, buildDocument } from '../../utils/csv-utils'
+import { parseCSV, buildRefLookupMaps, buildDocument, detectArrayRefFields } from '../../utils/csv-utils'
 import type { Reference } from '../../utils/csv-utils'
 
 interface ImportProgress {
@@ -144,9 +144,12 @@ async function importInBackground(
 
         // ── Build reference lookup maps ──────────────────────────────────────
         let refMaps = new Map()
+        let arrayRefFields = new Set<string>()
         if (references.length > 0) {
             progress.message = 'Building reference lookup maps...'
             refMaps = await buildRefLookupMaps(db, references, rows)
+            // Pre-scan to detect which ref fields have any comma-separated values
+            arrayRefFields = detectArrayRefFields(rows, references)
         }
 
         progress.status = 'importing'
@@ -163,7 +166,7 @@ async function importInBackground(
             const batch = rows.slice(i, i + batchSize)
 
             const documents = batch.map((row) =>
-                buildDocument(row, references, refMaps, refStats, splitAsArrayFields),
+                buildDocument(row, references, refMaps, refStats, splitAsArrayFields, arrayRefFields),
             )
 
             await col.insertMany(documents, { ordered: false })
