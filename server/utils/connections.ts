@@ -20,32 +20,50 @@ export interface SourceInfo {
 }
 
 // ─── File path ────────────────────────────────────────────────────────────────
-const DATA_FILE = resolve(process.cwd(), 'server/data/connections.json')
+// On serverless platforms like Vercel, the filesystem is read-only (EROFS) except
+// for the /tmp directory. We detect if we are running on Vercel and route custom connections
+// there so the API does not crash.
+const IS_VERCEL = !!process.env.VERCEL
+const DATA_FILE = IS_VERCEL
+    ? '/tmp/connections.json'
+    : resolve(process.cwd(), 'server/data/connections.json')
 
 // ─── Custom Connections (JSON file) ───────────────────────────────────────────
 function ensureDataFile() {
-    if (!existsSync(DATA_FILE)) {
-        const dir = dirname(DATA_FILE)
-        if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
-        writeFileSync(DATA_FILE, JSON.stringify({ connections: [] }, null, 2), 'utf-8')
+    try {
+        if (!existsSync(DATA_FILE)) {
+            const dir = dirname(DATA_FILE)
+            if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+            writeFileSync(DATA_FILE, JSON.stringify({ connections: [] }, null, 2), 'utf-8')
+        }
+    }
+    catch (e) {
+        console.warn('[Connections] Could not ensure data file (likely read-only filesystem):', e)
     }
 }
 
 export function readCustomConnections(): CustomConnection[] {
-    ensureDataFile()
     try {
+        ensureDataFile()
+        if (!existsSync(DATA_FILE)) return []
         const raw = readFileSync(DATA_FILE, 'utf-8')
         const data: ConnectionsFile = JSON.parse(raw)
         return data.connections || []
     }
-    catch {
+    catch (e) {
+        console.error('[Connections] Error reading custom connections:', e)
         return []
     }
 }
 
 export function writeCustomConnections(connections: CustomConnection[]) {
-    ensureDataFile()
-    writeFileSync(DATA_FILE, JSON.stringify({ connections }, null, 2), 'utf-8')
+    try {
+        ensureDataFile()
+        writeFileSync(DATA_FILE, JSON.stringify({ connections }, null, 2), 'utf-8')
+    }
+    catch (e) {
+        console.error('[Connections] Error writing custom connections:', e)
+    }
 }
 
 export function addCustomConnection(conn: CustomConnection) {
